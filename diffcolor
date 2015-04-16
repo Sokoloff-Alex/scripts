@@ -1,0 +1,85 @@
+#!/bin/bash
+echo "compare files
+"
+
+
+while [[ $# > 2 ]]
+do
+pattern="$1"
+fileA="$2"
+fileB="$3"
+shift
+done
+
+echo "pattern: $pattern"
+echo "fileA  : $fileA"
+echo "fileB  : $fileB"
+echo " - - - "
+
+startA=($(grep -m 1 -n "$pattern" $fileA))
+startB=($(grep -m 1 -n "$pattern" $fileB))
+startA=${startA%:*} 
+startB=${startB%:*} 
+# echo " "
+
+for (( i=2; i<=4; i++)); do                # iterate over lines
+numberA=$(($i + $startA))
+numberB=$(($i + $startB))
+lineA=$(tail -n +$numberA $fileA | head -1)
+lineB=$(tail -n +$numberB $fileB | head -1)
+A=( $lineA )
+B=( $lineB )
+
+length=${#A[@]} 
+StringA=""
+StringB=""
+
+	for ((word=0; $word <$length; word++)); do   # iterate ofer words
+	re='^-?[0-9]+([.][0-9]+)?$'
+	a=${A[$word]}
+	b=${B[$word]}
+
+	if ! [[ $a =~ $re ]] ; then	# check if a number
+#		echo  $a " -- Not a number"
+		if [ "$a" == "$b" ]; then	
+			color=10 # white
+		else
+			color=4  # blue
+		fi
+	else
+#		echo  $myvar " is number" 
+		if [ "$a" == "$b" ]; then		
+			color=10 # white
+		else	
+			if (( $(bc <<< "$a < 0" ) == 1)); then a=${a:1}; fi # abs a
+			if (( $(bc <<< "$b < 0" ) == 1)); then b=${b:1}; fi # abs b
+			if (( $(bc <<< "$a < $b") == 1)); then         # cmp by abs
+				color=1 # red	
+			else
+				color=2 # green
+			fi		
+		fi
+	fi
+	StringA="$StringA  ${A[$word]}"	
+	StringB="$StringB  $(tput setaf $color)${B[$word]}$(tput sgr0)"
+	done
+
+echo "$StringA"
+echo "$StringB"
+echo " "
+
+done
+
+echo "done"
+
+
+
+
+
+
+
+
+
+
+
+
