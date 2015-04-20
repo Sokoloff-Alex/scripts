@@ -2,31 +2,41 @@
 echo "compare files
 "
 
-
-while [[ $# > 2 ]]
+while [[ $# == 2 ]]
 do
-pattern="$1"
-fileA="$2"
-fileB="$3"
+patternStart="Comparison of individual solutions:"
+fileA="$1"
+fileB="$2"
 shift
 done
 
-echo "pattern: $pattern"
+echo "patternStart: $patternStart"
 echo "fileA  : $fileA"
 echo "fileB  : $fileB"
-echo " - - - "
+echo " - - - - - - - - -"
 
-startA=($(grep -m 1 -n "$pattern" $fileA))
-startB=($(grep -m 1 -n "$pattern" $fileB))
+startA=($(grep -m 1 -n "$patternStart" $fileA))
+startB=($(grep -m 1 -n "$patternStart" $fileB))
 startA=${startA%:*} 
 startB=${startB%:*} 
+lastA=($(grep -m 1 -n 'Variance-covariance scaling factors:' $fileA))
+lastA=${lastA%:*}
+NumberOfLines=$(($lastA - $startA))
 # echo " "
 
-for (( i=2; i<=4; i++)); do                # iterate over lines
+for (( i=3; i<=(($NumberOfLines - 1)); i++)); do                # iterate over lines
+#for (( i=3; i<=100; i++)); do                # iterate over lines
 numberA=$(($i + $startA))
-numberB=$(($i + $startB))
+#echo 'numberA:' $numberA
+#numberB=$(($i + $startB))
 lineA=$(tail -n +$numberA $fileA | head -1)
-lineB=$(tail -n +$numberB $fileB | head -1)
+#lineB=$(tail -n +$numberB $fileB | head -1)
+#echo 'lineA:' $lineA
+searchPattern=$(echo "${lineA:0:20}")
+#echo 'searchPattern' "$searchPattern" 
+lineB=$(grep "$searchPattern" $fileB)
+#echo 'lineB' $lineB
+
 A=( $lineA )
 B=( $lineB )
 
@@ -67,7 +77,6 @@ StringB=""
 echo "$StringA"
 echo "$StringB"
 echo " "
-
 done
 
 echo "done"
