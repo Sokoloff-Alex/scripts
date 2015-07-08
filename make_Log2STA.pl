@@ -1,7 +1,37 @@
 #!/usr/bin/perl
-# Generate STA file from Log files
+#
+#   Generates STA file from gnss stations LOG files
+#
+#   station LOG files must be formated according to:
+#	ftp://igscb.jpl.nasa.gov/pub/station/general/sitelog_instr.txt 
+#
+##### Command form:
+#
+#   make_Log2STA.pl [option] [directory]
+#
+##### simple examples:
+#
+#	make_Log2STA.pl . 
+# 		reads all avaliable .log files in currect directory
+#	    and save Station Information File New.STA in current directory.
+# 
+# 	make_Log2STA.pl -sw LogFilesFolder 
+# 		reads all avaliable .log files in LogFilesFolder directory
+#	    and save Station Information File New.STA in this directory,
+#       neglecting firmware updates of reciever.  
+#
+##### options:
+#
+# 	-sw 
+#		generate Station Information File , neglecting firmware updates.
+# 
+####
+#
 # Author: Alexandr Sokolov
-# 2015 year
+# e-mail: sokolovalexv@gmail.com
+# 2015, (c)
+#
+##########################################################################
 
 use strict;
 use warnings;
