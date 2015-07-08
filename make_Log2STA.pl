@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 # Generate STA file from Log files
+# Author: Alexandr Sokolov
+# 2015 year
 
 use strict;
 use warnings;
