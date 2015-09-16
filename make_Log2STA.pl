@@ -33,6 +33,7 @@
 #
 ##########################################################################
 
+
 use strict;
 use warnings;
 use List::Util 'first';
@@ -164,9 +165,10 @@ foreach my $file (@files) {
 	#print "@AntennasData";
 	
 	my @Antenna = grep { /Antenna Type             :/ } @AntennasData;
+	my @AntennaRadomType = grep  { /Antenna Radome Type      :/}  @AntennasData;
 	my @AntSerNumber = grep { /Serial Number            :/ } @AntennasData;
 	my @Eccentricity_U = grep { /Up Ecc/ } @AntennasData;
-	@Eccentricity_U = grep { /(m)/ } @Eccentricity_U; # correction of bag above
+	@Eccentricity_U = grep { /(m)/ } @Eccentricity_U; # correction of bag above due to special charracters combination
 	my @Eccentricity_N = grep { /North Ecc/ } @AntennasData;
 	my @Eccentricity_E = grep { /East Ecc/ } @AntennasData;
 	my @DateInstalled= grep { /Date Installed           :/ } @AntennasData;
@@ -177,15 +179,21 @@ foreach my $file (@files) {
 	my @AntennasArray;
 	for (my $i=0; $i <= $NumberOfAntennas-1; $i++) {		
 		my $Antenna = GetAntenna($Antenna[$i]);	
+		my $AntennaRadomType = GetAntennaRadomType($AntennaRadomType[$i]);
 		(my $AntSerNumber, my $AntNumber ) = GetAntennaSerialNumber($AntSerNumber[$i]);	
 		my $Eccentricity_U = GetEccentricity($Eccentricity_U[$i]);
 		my $Eccentricity_N = GetEccentricity($Eccentricity_N[$i]);
 		my $Eccentricity_E = GetEccentricity($Eccentricity_E[$i]);
 		my $DateInstalled  = GET_DATE($DateInstalled[$i]);		
-		my $DateRemoved    = GET_DATE($DateRemoved[$i]);		
+		my $DateRemoved    = GET_DATE($DateRemoved[$i]);
+
+		if (  $Antenna[1] ne $AntennaRadomType || length($Antenna) ne 20 ) {		
+			$Antenna = substr $Antenna, 0,15;
+			$Antenna = sprintf ("%-15s %4s", $Antenna, $AntennaRadomType);
+		} 	
 
 		@AntennasArray[$i] = ([$DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E]);
-		#printf "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved,   $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
+		#printf "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
 	}	
 	
 	### Filter Reciever array, skip Firmware updates ######
@@ -244,11 +252,11 @@ print "New STA file saved in: $dir/New.STA";
              
 print "\nDone\n\n"; 
 
-########################
-#
-#      subroutines
-#
-########################
+################################################################################
+#			
+#      subroutines	
+#			
+################################################################################
 
 sub GET_MARK_NAME() {
 	my $mark_name = substr $_[0],32,4;
@@ -332,6 +340,14 @@ sub GetAntenna() {
 	return($Antenna);
 }
 
+sub GetAntennaRadomType() {
+	my $AntennaRadomType = $_[0];
+	$AntennaRadomType = substr $AntennaRadomType, 32,4;	
+	$AntennaRadomType =~ s/^\s+//;
+	$AntennaRadomType =~ s/[\r\n]+$//;
+	return($AntennaRadomType);
+}
+
 sub GetAntennaSerialNumber() {
 	my $AntSerNumber = $_[0];
 	$AntSerNumber = substr $AntSerNumber, 32,20;
@@ -402,6 +418,7 @@ sub getLaterDate() {
 }
 
 ####### Filter Reciever array, skip Firmware updates #####
+
 sub FilterReceiverArray() {     
 	my @RecieversArray = @_; 
 	my $NumberOfReceivers = @RecieversArray;
