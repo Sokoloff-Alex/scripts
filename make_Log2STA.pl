@@ -317,12 +317,12 @@ sub GetReceiverNumber() {
 	$RecSerNumber = substr $RecSerNumber, 32,20;
 	$RecSerNumber =~ s/^\s+//;
 	$RecSerNumber =~ s/[\r\n]+$//; 
-	my $RecNumber;   
-	if ($RecSerNumber ne "") {
-		$RecNumber = " ";
-	} else {
-		$RecNumber = "999999";
-	}
+	my $RecNumber = "999999";
+	#if ($RecSerNumber ne "") {
+	#	$RecNumber = " ";
+	#} else {
+	#	$RecNumber = "999999";
+	#}
 	return($RecSerNumber, $RecNumber);
 }
 
@@ -355,14 +355,14 @@ sub GetAntennaSerialNumber() {
 	$AntSerNumber = substr $AntSerNumber, 32,20;
 	$AntSerNumber =~ s/^\s+//;
 	$AntSerNumber =~ s/[\r\n]+$//;
-	my $AntNumber;
-	if ($AntSerNumber ne "") {
-		$AntNumber = $AntSerNumber;
-		$AntNumber =~ s/\D//g;;
-		$AntNumber = substr $AntNumber, -6;
-	} else {
-		$AntNumber = "999999";
-	}
+	my $AntNumber = "999999";
+	#if ($AntSerNumber ne "") {
+	#	$AntNumber = $AntSerNumber;
+	#	$AntNumber =~ s/\D//g;;
+	#	$AntNumber = substr $AntNumber, -6;
+	#} else {
+	#	$AntNumber = "999999";
+	#}
 	return ($AntSerNumber, $AntNumber);
 }
 
