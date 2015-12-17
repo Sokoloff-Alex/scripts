@@ -90,7 +90,8 @@ foreach my $file (@files) {
 	$string = first { /Date Installed           :/ } @LogFile;
 	my $DateInstalled = GET_DATE($string);
 
-	my $DateRemoved ='2099 12 31 00 00 00';
+       #my $DateRemoved ='2099 12 31 00 00 00';
+	my $DateRemoved ='                   ';
 
 	my $Remark = substr $file, -17;
 	
@@ -296,7 +297,8 @@ sub GET_DATE() {
 		}
 		$DateTime = "$year $month $day $hh $mm $ss";
 	} else {
-		$DateTime = '2099 12 31 00 00 00';
+	#	$DateTime = '2099 12 31 00 00 00';
+		$DateTime = '                   ';
 
 	}
 	return($DateTime);	
