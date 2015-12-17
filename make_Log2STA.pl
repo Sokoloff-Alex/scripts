@@ -90,12 +90,12 @@ foreach my $file (@files) {
 	$string = first { /Date Installed           :/ } @LogFile;
 	my $DateInstalled = GET_DATE($string);
 
-       #my $DateRemoved ='2099 12 31 00 00 00';
+#	my $DateRemoved ='2099 12 31 00 00 00';
 	my $DateRemoved ='                   ';
 
 	my $Remark = substr $file, -17;
 	
-	printf "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG,$DateInstalled, $DateRemoved, $mark_name, $Remark;
+	#printf "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG,$DateInstalled, $DateRemoved, $mark_name, $Remark;
 	printf $NewSTA "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG, $DateInstalled, $DateRemoved, $mark_name, $Remark;
 }
 
@@ -211,25 +211,31 @@ foreach my $file (@files) {
 	my $NewDateEnd;
 	my $flagStart;	
 	my $flagEnd;	
+	my $flagOverlap;	
 	my $counterRec = 0;
 	my $counterAnt = 0;
 	my $index = 0;
 
-    while (($counterRec < $NumberOfReceivers) && ($counterAnt < $NumberOfAntennas)) {
+	while (($counterRec < $NumberOfReceivers) && ($counterAnt < $NumberOfAntennas)) {
 
-       ($NewDateStart, $flagStart) = getLaterDate(  $RecieversArray[$counterRec][0], $AntennasArray[$counterAnt][0]);
-       ($NewDateEnd,   $flagEnd)   = getEarlierDate($RecieversArray[$counterRec][1], $AntennasArray[$counterAnt][1]);
-        
-        @Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $RecieversArray[$counterRec][2], $RecieversArray[$counterRec][3],  $RecieversArray[$counterRec][4], $RecieversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
-		$index++;	
-        if ($flagEnd eq "RecChange" ) {
-	        $counterRec++;
-        } elsif ($flagEnd eq "AntChange" ) {
-	        $counterAnt++;
-        } else {
-	        $counterRec++;
-	        $counterAnt++;
+		($NewDateStart, $flagStart) = getLaterDate(   $RecieversArray[$counterRec][0], $AntennasArray[$counterAnt][0]);
+		($NewDateEnd,   $flagEnd)   = getEarlierDate( $RecieversArray[$counterRec][1], $AntennasArray[$counterAnt][1]);
+		$flagOverlap = checkDurationOfOverlap($NewDateStart, $NewDateEnd);
+		if ( $flagOverlap eq "PositiveOverlap" ) {
+			@Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $RecieversArray[$counterRec][2], $RecieversArray[$counterRec][3],  $RecieversArray[$counterRec][4], $RecieversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
+			$index++;	
 		}
+
+		if ($flagEnd eq "RecChange" ) {
+			$counterRec++;
+		} elsif ($flagEnd eq "AntChange" ) {
+			$counterAnt++;
+		} elsif ($flagEnd eq "Equal" ) {
+			$counterRec++;
+			$counterAnt++;
+		} else {
+			print "\n ERROR : Cannot distinguish dates of equipment changes\n\n"; 
+		} 
 	}
 	#print "\n";
 
@@ -240,7 +246,7 @@ foreach my $file (@files) {
 	for (my $row = 0; $row < $RecordsNumber; $row++) {	
 		@line = ($Records[$row][0], $Records[$row][1], $Records[$row][2], $Records[$row][3], $Records[$row][4], $Records[$row][5],$Records[$row][6], $Records[$row][7], $Records[$row][9], $Records[$row][10], $Records[$row][11], $Records[$row][13], $Records[$row][14], $Records[$row][12], $Records[$row][15], $Records[$row][8]) ;
 		for (my $col = 0; $col <= 15; $col++) {
-			printf (@format[$col], @line[$col]) ;
+			#printf (@format[$col], @line[$col]) ;
 			printf ($NewSTA @format[$col], @line[$col]);
 		}		
 	}
@@ -288,16 +294,16 @@ sub GET_DATE() {
 		my $year  = substr $DateTimeISO, 0,4;
 	 	my $month = substr $DateTimeISO, 5,2;
 	 	my $day   = substr $DateTimeISO, 8,2;
-		my $hh = "00";
-		my $mm = "00";
-		my $ss = "00";
-		if( length($DateTimeISO) == 17  ) {
+		my $hh    = "00"; 
+		my $mm    = "00"; 	
+		my $ss    = "00";		
+		if( length($DateTimeISO) eq "17" || length($DateTimeISO) eq "16"  ) {
 			$hh = substr $DateTimeISO, 11,2;
 	 		$mm = substr $DateTimeISO, 14,2;		
 		}
 		$DateTime = "$year $month $day $hh $mm $ss";
 	} else {
-	#	$DateTime = '2099 12 31 00 00 00';
+#		$DateTime = '2099 12 31 00 00 00';
 		$DateTime = '                   ';
 
 	}
@@ -317,7 +323,7 @@ sub GetReceiverNumber() {
 	$RecSerNumber = substr $RecSerNumber, 32,20;
 	$RecSerNumber =~ s/^\s+//;
 	$RecSerNumber =~ s/[\r\n]+$//; 
-	my $RecNumber = "999999";
+	my $RecNumber = "999999"; 
 	#if ($RecSerNumber ne "") {
 	#	$RecNumber = " ";
 	#} else {
@@ -377,6 +383,29 @@ sub GetEccentricity() {
 	return($Eccentricity);
 }
 
+sub getLaterDate() {
+	my $Date1 = $_[0];
+	my $Date2 = $_[1];
+	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
+	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
+	#print "Date1: $Date1\n";
+	#print "Date2: $Date2\n";
+	my $flagStart;
+	my $NewDateStart;
+	if ($Date1 gt $Date2) {
+		$NewDateStart = $_[0];
+		$flagStart = "AntRemains";	
+	} elsif ($Date1 lt $Date2) {
+		$NewDateStart = $_[1];
+		$flagStart = "RecRemains";
+	} else {
+		$NewDateStart = $_[0];
+		$flagStart = "Equal";	
+	}
+	#print "DateLater: $NewDateStart, $flagStart    \n\n";
+	return($NewDateStart, $flagStart); #  return later date
+}
+
 sub getEarlierDate {
 	my $Date1 = $_[0];
 	my $Date2 = $_[1];
@@ -396,28 +425,30 @@ sub getEarlierDate {
 		$NewDateEnd = $_[0];
 		$flagEnd = "Equal";	
 	}
+	#print "DateEarlier: $NewDateEnd, $flagEnd\n\n";
 	return($NewDateEnd, $flagEnd); #  return earlier date
 }
 
-sub getLaterDate() {
+sub checkDurationOfOverlap {
 	my $Date1 = $_[0];
 	my $Date2 = $_[1];
 	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
 	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
-	my $flagStart;
-	my $NewDateStart;
-	if ($Date1 gt $Date2) {
-		$NewDateStart = $_[0];
-		$flagStart = "AntRemains";	
+	#print "Date1: $Date1\n";
+	#print "Date2: $Date2\n";
+	my $flagOverlap;
+	if ($Date1 eq $Date2) {
+		$flagOverlap = "ZeroOverlap";	
+		#print "block skiped : $flagOverlap\n\n";
 	} elsif ($Date1 lt $Date2) {
-		$NewDateStart = $_[1];
-		$flagStart = "RecRemains";
+		$flagOverlap = "PositiveOverlap";
+		#print "block skiped : $flagOverlap\n\n";
 	} else {
-		$NewDateStart = $_[0];
-		$flagStart = "Equal";	
+		$flagOverlap = "NegativeOverlap";	
 	}
-	return($NewDateStart, $flagStart); #  return later date
+	return($flagOverlap); 
 }
+
 
 ####### Filter Reciever array, skip Firmware updates #####
 
@@ -466,6 +497,8 @@ sub FilterReceiverArray() {
 	$NumberOfReceivers = $ReceiverFilteredNumber;
 	return (@RecieversArray)
 }
+
+##########################################################
 
 
 sub AddHeaderOfType1() {
