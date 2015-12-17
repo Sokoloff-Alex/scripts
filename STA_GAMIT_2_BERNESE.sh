@@ -22,7 +22,7 @@ inputFile="$1"
 outputFile="$inputFile.STA"
 flag="001"
 REMARK='by the RENAG GNSS GSAC'
-date_time=$(gps_date -t -o "%d-%B-%Y %H:%M")
+date_time=$(date "+%d-%b-%Y %H:%M")
 
 
 echo "
