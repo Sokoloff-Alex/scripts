@@ -112,29 +112,32 @@ do {
 	then
 		Ant_DOME="NONE"					
 	fi
-	
+		
 	Ant_SN=$( echo "$Ant_SN" | sed 's/ *//g')
 	if (( "$Ant_SN" == "UNKNOWN" || "$Ant_SN" == "Unknown" || "$Ant_SN" == "unknown" ))
 	then
 		Ant_SN="999999"					
 	fi
 
-	if (( $(echo ${#Rec_SN}) < 6 ))
-	then
-		Rec_SN_short=$Rec_SN
-	else
-		Rec_SN_short=$(echo ${Rec_SN:(-6)})
-	fi 
+	Rec_SN_short="999999"	
+	Ant_SN_short="999999"
 
-	if (( $( echo ${#Ant_SN}) < 6 ))
-	then
-		Ant_SN_short=$Ant_SN	
-	else
-		Ant_SN_short=$(echo ${Ant_SN:(-6)}) 
-	fi
+	#if (( $(echo ${#Rec_SN}) < 6 ))
+	#then
+	#	Rec_SN_short=$Rec_SN
+	#else
+	#	Rec_SN_short=$(echo ${Rec_SN:(-6)})
+	#fi 
+	#
+	#if (( $( echo ${#Ant_SN}) < 6 ))
+	#then
+	#	Ant_SN_short=$Ant_SN	
+	#else
+	#	Ant_SN_short=$(echo ${Ant_SN:(-6)}) 
+	#fi
 	
-	format=( "%4s" " %-10s" "       %03d"    "  %4d"    " %2s"    " %2s"    " %2s"    " %2s"    " %2s" "  %4d"  " %2s"  " %2s"  " %2s"  " %2s"  " %2s"          "  %-20s"   "  %-20s"      "  %-6s"             "  %-15s"    " %4s"  "  %20s"       "  %6s" "  %8s"  "  %8s" "  %8s"        "  %-22s"           '  %-24s \n')
-	records=($SITE    $SITE         $flag  $YY_start $MM_start $dd_start $hh_start $mm_start $ss_start $YY_end $MM_end $dd_end $hh_end $mm_end $ss_end "$(echo $Rec_Type)"   $Rec_SN "$Rec_SN_short" "$(echo $Ant_Type)" $Ant_DOME   $Ant_SN $Ant_SN_short  $Ant_N   $Ant_E $Ant_Ht "$(echo $Description)" "$(echo $Rec_Vers)")
+	format=( "%4s" " %-10s" "       %03d"    "  %4d"    " %2s"    " %2s"    " %2s"    " %2s"    " %2s" "  %4d"  " %2s"  " %2s"  " %2s"  " %2s"  " %2s"          "  %-20s"            "  %-20s"      "  %6s"             "  %-15s"    " %4s"            "  %20s"       "  %6s" "  %8s"  "  %8s" "  %8s"        "  %-22s"           '  %-24s \n')
+	records=($SITE    $SITE         $flag  $YY_start $MM_start $dd_start $hh_start $mm_start $ss_start $YY_end $MM_end $dd_end $hh_end $mm_end $ss_end "$(echo $Rec_Type)"   "$(echo $Rec_SN)" "$Rec_SN_short" "$(echo $Ant_Type)" $Ant_DOME   "$(echo $Ant_SN)" $Ant_SN_short  $Ant_N   $Ant_E $Ant_Ht "$(echo $Description)" "$(echo $Rec_Vers)")
 
 
 	# print to file
