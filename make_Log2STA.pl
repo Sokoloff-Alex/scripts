@@ -13,12 +13,11 @@
 #
 #	make_Log2STA.pl . 
 # 		reads all available .log files in current directory
-#	    and save Station Information File New.STA in current directory.
+#	    and prints to the Standatr Output.
 # 
 # 	make_Log2STA.pl -sw LogFilesFolder 
 # 		reads all avaliable .log files in LogFilesFolder directory
-#	    and save Station Information File New.STA in this directory,
-#       neglecting firmware updates of receiver.  
+#	    and prints to the Standatr Output, neglecting firmware updates of receiver.  
 #
 ##### options:
 #
