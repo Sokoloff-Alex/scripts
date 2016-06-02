@@ -50,12 +50,14 @@ use POSIX qw(strftime);
 sub GET_MARK_NAME {
 	my $mark_name = substr $_[0],32,4;
 	$mark_name =~ s/^\s+//;
+	$mark_name =~ s/[\r\n]+$//;
 	return($mark_name);
 }
 
 sub GET_MARK_NUMBER {
 	my $mark_number = substr $_[0], 32,9;
 	$mark_number =~ s/^\s+//;
+	$mark_number =~ s/[\r\n]+$//;
 	return($mark_number);
 }
 
@@ -67,12 +69,12 @@ sub GET_Description {
 }
 
 sub GET_DATE {
-	my $DateTimeISO = $_[0]; 
- 	$DateTimeISO = substr $DateTimeISO, 32,17; 
-
+	my $DateTimeISO_str = $_[0]; 
+ 	my $DateTimeISO = substr $DateTimeISO_str, 32,17; 
+	$DateTimeISO =~ s/^\s+//;
+	$DateTimeISO =~ s/[\r\n]+$//;
 	my $DateTime;
-	if ( $DateTimeISO ne 'CCYY-MM-DDThh:mmZ' && $DateTimeISO ne '(CCYY-MM-DDThh:mm' ) {
-	#print "$DateTimeISO\n";
+	if ( $DateTimeISO ne 'CCYY-MM-DDThh:mmZ' && $DateTimeISO ne '(CCYY-MM-DDThh:mm' && $DateTimeISO ne "" ) {
 		my $year  = substr $DateTimeISO, 0,4;
 	 	my $month = substr $DateTimeISO, 5,2;
 	 	my $day   = substr $DateTimeISO, 8,2;
@@ -85,6 +87,7 @@ sub GET_DATE {
 		}
 		$DateTime = "$year $month $day $hh $mm $ss";
 	} else {
+		# print STDERR "$DateTimeISO\n";
 		$DateTime = '2099 12 31 00 00 00';
 #		$DateTime = '                   ';
 
@@ -135,6 +138,9 @@ sub GetAntennaRadomType {
 	$AntennaRadomType = substr $AntennaRadomType, 32,4;	
 	$AntennaRadomType =~ s/^\s+//;
 	$AntennaRadomType =~ s/[\r\n]+$//;
+	if ($AntennaRadomType eq "") {
+		#print STDERR "\n Radom is not specified!\n";
+	}	
 	return($AntennaRadomType);
 }
 
@@ -159,7 +165,7 @@ sub GetEccentricity {
 	$Eccentricity = substr $Eccentricity, 32,8;
 	$Eccentricity =~ s/^\s+//;
 	$Eccentricity =~ s/[\r\n]+$//;
-	if ($Eccentricity eq "") {
+	if ($Eccentricity eq "" || $Eccentricity eq "(F8.4)") {
 		$Eccentricity = 0.000;
 	}
 	return($Eccentricity);
@@ -215,7 +221,6 @@ sub checkDurationOfOverlap {
 	my $Date1 = $_[0];
 	my $Date2 = $_[1];
 	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
-	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
 	#print "Date1: $Date1\n";
 	#print "Date2: $Date2\n";
 	my $flagOverlap;
@@ -409,7 +414,9 @@ foreach my $file (@files) {
 
 	$string = first { /IERS DOMES Number        :/ } @LogFile;	
 	my $mark_number = GET_MARK_NUMBER($string);
-	
+	if ( $mark_number eq "N/A" || $mark_number eq "(A9)" || $mark_number eq "NONE" || $mark_number eq "" )  {		
+		$mark_number = $mark_name;
+	}	
 	$string = first { /Date Installed           :/ } @LogFile;
 	my $DateInstalled = GET_DATE($string);
 	if ( $DateInstalled eq '2099 12 31 00 00 00') {
@@ -446,6 +453,9 @@ foreach my $file (@files) {
 
 	$string = first { /IERS DOMES Number        :/ } @LogFile;	
 	my $mark_number = GET_MARK_NUMBER($string);
+	if ( $mark_number eq "N/A" || $mark_number eq "(A9)" || $mark_number eq "NONE" || $mark_number eq "" )  {		
+		$mark_number = $mark_name;
+	}	
 
 	$string = first { /Site Name                :/ } @LogFile;	
 	my $Description = GET_Description($string);
@@ -454,17 +464,17 @@ foreach my $file (@files) {
 
 	my $FirstReceiverIndex = first_index { /3.1  Receiver Type            :/ } @LogFile;
 	my $LastReceiverIndex  = first_index { /3.x  Receiver Type            :/ } @LogFile;
-    if ($LastReceiverIndex == -1) {
-       $LastReceiverIndex  = first_index { /4.   GNSS Antenna Information/ } @LogFile;     
-    }
+	if ($LastReceiverIndex == -1) {
+		$LastReceiverIndex  = first_index { /4.   GNSS Antenna Information/ } @LogFile;     
+	}
 	my @ReceiversData = @LogFile[$FirstReceiverIndex..$LastReceiverIndex-2];
 	#print "@ReceiversData";
 	
-	my @Rec = grep { /Receiver Type            :/ } @ReceiversData;
-	my @RecSerNumber = grep { /Serial Number            :/ } @ReceiversData;
-	my @FirmWareVers = grep { /Firmware Version         :/ } @ReceiversData;
-	my @DateInstalled = grep { /Date Installed           :/ } @ReceiversData;
-	my @DateRemoved = grep { /Date Removed             :/ } @ReceiversData;	
+	my @Rec               = grep { /Receiver Type            :/ } @ReceiversData;
+	my @RecSerNumber      = grep { /Serial Number            :/ } @ReceiversData;
+	my @FirmWareVers      = grep { /Firmware Version         :/ } @ReceiversData;
+	my @DateInstalled     = grep { /Date Installed           :/ } @ReceiversData;
+	my @DateRemoved       = grep { /Date Removed             :/ } @ReceiversData;	
 	my $NumberOfReceivers = true { /Receiver Type            :/ } @ReceiversData;
 	#print "Number of Receivers: $NumberOfReceivers\n";
 	my @RecieversArray;
@@ -479,16 +489,16 @@ foreach my $file (@files) {
 
 		$RecieversArray[$i] = ([$DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers]); ## Contains ALL Receivers DATA 
 		#printf "%20s %20s %20s %20s %10s %20s \n", $DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers; 	 
-    }
+	}
 	#print "\n";
 
 	########### Get ANTENNAS SubArray ###############################################
 
 	my $FirstAntennaIndex = first_index { /4.1  Antenna Type             :/ } @LogFile;
 	my $LastAntennaIndex  = first_index { /4.x  Antenna Type             :/ } @LogFile;
-    if ($LastAntennaIndex == -1) {
-        $LastAntennaIndex  = first_index { /5.   Surveyed Local Ties/ } @LogFile;
-    }
+	if ($LastAntennaIndex == -1) {
+		$LastAntennaIndex  = first_index { /5.   Surveyed Local Ties/ } @LogFile;
+	}
 	my @AntennasData = @LogFile[$FirstAntennaIndex..$LastAntennaIndex-2];
 	#print "@AntennasData";
 	
@@ -515,7 +525,10 @@ foreach my $file (@files) {
 		my $DateInstalled  = GET_DATE($DateInstalled[$i]);		
 		my $DateRemoved    = GET_DATE($DateRemoved[$i]);
 
-		if (  $Antenna[1] ne $AntennaRadomType || length($Antenna) ne 20 ) {		
+		if ( length($Antenna) ne 20 ) {		
+			#print STDERR "\nAntenna Error:\n";
+			#print STDERR "$Antenna\n";
+			#print STDERR "$AntennaRadomType\n";
 			$Antenna = substr $Antenna, 0,15;
 			$Antenna = sprintf ("%-15s %4s", $Antenna, $AntennaRadomType);
 		} 	
@@ -552,7 +565,7 @@ foreach my $file (@files) {
 			$Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $RecieversArray[$counterRec][2], $RecieversArray[$counterRec][3],  $RecieversArray[$counterRec][4], $RecieversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
 			$index++;	
 		} else {
-			print "\nflagOverlap $flagOverlap \n\n"; 
+			#print STDERR "\nflagOverlap $flagOverlap \n\n"; 
 		}
 
 		if ($flagEnd eq "RecChange" ) {
@@ -563,12 +576,12 @@ foreach my $file (@files) {
 			$counterRec++;
 			$counterAnt++;
 		} else {
-			print "\n ERROR : Cannot distinguish dates of equipment changes\n\n"; 
+			print STDERR "\n ERROR : Cannot distinguish dates of equipment changes\n\n"; 
 		} 
 	}
 	#print "\n";
 
-    ####  print in TYPE 3 format to console and to the file #### 
+    	####  print in TYPE 3 format to console and to the file #### 
 	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
 	my @line;
 	my $RecordsNumber = @Records;
