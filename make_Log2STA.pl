@@ -176,8 +176,8 @@ sub getLaterDate {
 	my $Date2 = $_[1];
 	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
 	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
-	#print "Date1: $Date1\n";
-	#print "Date2: $Date2\n";
+	#print STDERR "Date1: $Date1\n";
+	#print STDERR "Date2: $Date2\n";
 	my $flagStart;
 	my $NewDateStart;
 	if ($Date1 gt $Date2) {
@@ -190,7 +190,7 @@ sub getLaterDate {
 		$NewDateStart = $_[0];
 		$flagStart = "Equal";	
 	}
-	#print "DateLater: $NewDateStart, $flagStart    \n\n";
+	#print STDERR "DateLater: $NewDateStart, $flagStart    \n\n";
 	return($NewDateStart, $flagStart); #  return later date
 }
 
@@ -199,8 +199,8 @@ sub getEarlierDate {
 	my $Date2 = $_[1];
 	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
 	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
-	#print "Date1: $Date1\n";
-	#print "Date2: $Date2\n";
+	#print STDERR "Date1: $Date1\n";
+	#print STDERR "Date2: $Date2\n";
 	my $flagEnd;
 	my $NewDateEnd;
 	if ($Date1 gt $Date2) {
@@ -213,7 +213,7 @@ sub getEarlierDate {
 		$NewDateEnd = $_[0];
 		$flagEnd = "Equal";	
 	}
-	#print "DateEarlier: $NewDateEnd, $flagEnd\n\n";
+	#print STDERR "DateEarlier: $NewDateEnd, $flagEnd\n\n";
 	return($NewDateEnd, $flagEnd); #  return earlier date
 }
 
@@ -221,15 +221,16 @@ sub checkDurationOfOverlap {
 	my $Date1 = $_[0];
 	my $Date2 = $_[1];
 	$Date1 = (substr$Date1,0,4).(substr $Date1,5,2).(substr $Date1,8,2).(substr $Date1,11,2).(substr $Date1,14,2).(substr $Date1,17,2);
-	#print "Date1: $Date1\n";
-	#print "Date2: $Date2\n";
+	$Date2 = (substr$Date2,0,4).(substr $Date2,5,2).(substr $Date2,8,2).(substr $Date2,11,2).(substr $Date2,14,2).(substr $Date2,17,2);
+	#print STDERR "Date1: $Date1\n";
+	#print STDERR "Date2: $Date2\n";
 	my $flagOverlap;
 	if ($Date1 eq $Date2) {
 		$flagOverlap = "ZeroOverlap";	
-		#print "block skiped : $flagOverlap\n\n";
+		#print STDERR "block skiped : $flagOverlap\n\n";
 	} elsif ($Date1 lt $Date2) {
 		$flagOverlap = "PositiveOverlap";
-		#print "block skiped : $flagOverlap\n\n";
+		#print STDERR "block skiped : $flagOverlap\n\n";
 	} else {
 		$flagOverlap = "NegativeOverlap";	
 	}
@@ -237,52 +238,60 @@ sub checkDurationOfOverlap {
 }
 
 
-####### Filter Reciever array, skip Firmware updates #####
+####### Filter Receiver array, skip Firmware updates #####
 
 sub FilterReceiverArray {     
-	my @RecieversArray = @_; 
-	my $NumberOfReceivers = @RecieversArray;
-	#print "Neglecting Firmware Updates\n";
+	print STDERR "Neglecting Firmware Updates\n";
+	my @ReceiversArray = @_; 
+	my $NumberOfReceivers = @ReceiversArray;
 	my $Remark = " ";	
-	#my $file =@_[1];
-	#my $Remark = substr $file, -17;
-	my @RecieverArrayFiltered;	
+	my @ReceiverArrayFiltered;	
 	my @line1;
 	my @line2;
 	my $Counter = 0;
-	my @NewRecieverConfigLine = ([$RecieversArray[0][0], $RecieversArray[0][1],$RecieversArray[0][2], $RecieversArray[0][3],  $RecieversArray[0][4], $Remark]);
-	$RecieverArrayFiltered[0] = @NewRecieverConfigLine;
+	my @NewReceiverConfigLine;
+	if ($NumberOfReceivers eq "1") {
+		@ReceiverArrayFiltered = @ReceiversArray;
+	} else {
+		for (my $index=0; $index < $NumberOfReceivers; $index++) {
+			@NewReceiverConfigLine = ([$ReceiversArray[$index][0], $ReceiversArray[$index][1],$ReceiversArray[$index][2], $ReceiversArray[$index][3],  $ReceiversArray[$index][4], $Remark]);
+			if ($ReceiversArray[$index][1] == $ReceiversArray[$index+1][1] ||  $ReceiversArray[$index][2] == $ReceiversArray[$index+1][2])	
+				@NewReceiverConfigLine = ([$ReceiversArray[$index][0], $ReceiversArray[$index+1][1],$ReceiversArray[$index][2], $ReceiversArray[$index][3],  $ReceiversArray[$index][4], $Remark]);							
+			}				
+		}
+	}	
+
+	my @NewReceiverConfigLine = ([$ReceiversArray[0][0], $ReceiversArray[0][1],$ReceiversArray[0][2], $ReceiversArray[0][3],  $ReceiversArray[0][4], $Remark]);
+	$ReceiverArrayFiltered[0] = @NewReceiverConfigLine;
 	for (my $index=0; $index < $NumberOfReceivers; $index++) {
 		my $indexIN = $index+1;
-		if ($indexIN < $NumberOfReceivers) { # Get initial lines to compare 
-			@line1 = ($RecieversArray[$index][2], $RecieversArray[$index][3], $RecieversArray[$index][4]);
-			@line2 = ($RecieversArray[$indexIN][2], $RecieversArray[$indexIN][3], $RecieversArray[$indexIN][4]);
-			#print "Outer loop : index : $index : Line1: @line1\n";
-			#print "Inner loop : index : $indexIN : Line2: @line2\n";
+		if ($indexIN <= $NumberOfReceivers) { # Get initial lines to compare 
+			@line1 = ($ReceiversArray[$index][2],   $ReceiversArray[$index][3],   $ReceiversArray[$index][4]);
+			@line2 = ($ReceiversArray[$indexIN][2], $ReceiversArray[$indexIN][3], $ReceiversArray[$indexIN][4]);
+			#print STDERR "Outer loop : index : $index : Line1: @line1\n";
+			#print STDERR "Inner loop : index : $indexIN : Line2: @line2\n";
 		}			
 
-		while (("@line1" eq "@line2") && ($indexIN < $NumberOfReceivers)) {		# iterate over equal lines => skip equal	 	
-			@line2 = ($RecieversArray[$indexIN][2], $RecieversArray[$indexIN][3], $RecieversArray[$indexIN][4]);
-			#print "Inner loop : index : $indexIN : Line2: @line2\n";
+		while (("@line1" eq "@line2") && ($indexIN <= $NumberOfReceivers)) {		# iterate over equal lines => skip equal	 	
+			@line2 = ($ReceiversArray[$indexIN][2], $ReceiversArray[$indexIN][3], $ReceiversArray[$indexIN][4]);
+			print STDERR "Inner loop : index : $indexIN : Line2: @line2\n";
 			$indexIN++;
 		}
 
 		if ($indexIN <= $NumberOfReceivers) {   # write next unique line
-			@NewRecieverConfigLine = ([$RecieversArray[$index][0], $RecieversArray[$indexIN-1][1],$RecieversArray[$index][2], $RecieversArray[$index][3],  $RecieversArray[$index][4], $Remark]);
-			@RecieverArrayFiltered[$Counter] = @NewRecieverConfigLine;	
+			@NewReceiverConfigLine = ([$ReceiversArray[$index][0], $ReceiversArray[$indexIN-1][1],$ReceiversArray[$index][2], $ReceiversArray[$index][3],  $ReceiversArray[$index][4], $Remark]);
+			@ReceiverArrayFiltered[$Counter] = @NewReceiverConfigLine;	
 			$Counter++;
 			$index = $indexIN-1;	
 		}
 	}
 	# print to console
-	my $ReceiverFilteredNumber = @RecieverArrayFiltered;
-	#print "ReceiverFilteredNumber: $ReceiverFilteredNumber\n";
+	my $ReceiverFilteredNumber = @ReceiverArrayFiltered;
+	print STDERR "ReceiverFilteredNumber: $ReceiverFilteredNumber\n";
 	for (my $index=0; $index < $ReceiverFilteredNumber; $index++) {
-		#printf "%20s %20s %20s %20s %10s %20s \n", $RecieverArrayFiltered[$index][0], $RecieverArrayFiltered[$index][1], $RecieverArrayFiltered[$index][2], $RecieverArrayFiltered[$index][3], $RecieverArrayFiltered[$index][4], $RecieverArrayFiltered[$index][5];
+		printf STDERR "%20s %20s %20s %20s %10s %20s \n", $ReceiverArrayFiltered[$index][0], $ReceiverArrayFiltered[$index][1], $ReceiverArrayFiltered[$index][2], $ReceiverArrayFiltered[$index][3], $ReceiverArrayFiltered[$index][4], $ReceiverArrayFiltered[$index][5];
 	}
-	@RecieversArray = @RecieverArrayFiltered;
-	$NumberOfReceivers = $ReceiverFilteredNumber;
-	return (@RecieversArray)
+	return (@ReceiverArrayFiltered)
 }
 
 ##########################################################
@@ -460,7 +469,7 @@ foreach my $file (@files) {
 	$string = first { /Site Name                :/ } @LogFile;	
 	my $Description = GET_Description($string);
 	
-	#################### Get Recievers SubArray #############################################
+	#################### Get Receivers SubArray #############################################
 
 	my $FirstReceiverIndex = first_index { /3.1  Receiver Type            :/ } @LogFile;
 	my $LastReceiverIndex  = first_index { /3.x  Receiver Type            :/ } @LogFile;
@@ -468,7 +477,7 @@ foreach my $file (@files) {
 		$LastReceiverIndex  = first_index { /4.   GNSS Antenna Information/ } @LogFile;     
 	}
 	my @ReceiversData = @LogFile[$FirstReceiverIndex..$LastReceiverIndex-2];
-	#print "@ReceiversData";
+	#print STDERR "@ReceiversData";
 	
 	my @Rec               = grep { /Receiver Type            :/ } @ReceiversData;
 	my @RecSerNumber      = grep { /Serial Number            :/ } @ReceiversData;
@@ -476,8 +485,8 @@ foreach my $file (@files) {
 	my @DateInstalled     = grep { /Date Installed           :/ } @ReceiversData;
 	my @DateRemoved       = grep { /Date Removed             :/ } @ReceiversData;	
 	my $NumberOfReceivers = true { /Receiver Type            :/ } @ReceiversData;
-	#print "Number of Receivers: $NumberOfReceivers\n";
-	my @RecieversArray;
+	print STDERR "Number of Receivers: $NumberOfReceivers\n";
+	my @ReceiversArray;
 
 	for (my $i=0; $i <= $NumberOfReceivers-1; $i++) {
 		
@@ -487,10 +496,10 @@ foreach my $file (@files) {
 		my $DateInstalled = GET_DATE($DateInstalled[$i]);
 		my $DateRemoved   = GET_DATE($DateRemoved[$i]);
 
-		$RecieversArray[$i] = ([$DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers]); ## Contains ALL Receivers DATA 
-		#printf "%20s %20s %20s %20s %10s %20s \n", $DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers; 	 
+		$ReceiversArray[$i] = ([$DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers]); ## Contains ALL Receivers DATA 
+		printf STDERR "%20s %20s %-20s %-20s %10s %-20s \n", $DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers; 	 
 	}
-	#print "\n";
+	print STDERR "\n";
 
 	########### Get ANTENNAS SubArray ###############################################
 
@@ -512,7 +521,7 @@ foreach my $file (@files) {
 	@DateInstalled= grep { /Date Installed           :/ } @AntennasData;
 	@DateRemoved = grep { /Date Removed             :/ } @AntennasData;	
 	my $NumberOfAntennas = true { /Antenna Type             :/ } @AntennasData;
-	#print "Number of Antennas: $NumberOfAntennas\n";
+	#print STDERR "Number of Antennas: $NumberOfAntennas\n";
 	
 	my @AntennasArray;
 	for (my $i=0; $i <= $NumberOfAntennas-1; $i++) {		
@@ -534,18 +543,18 @@ foreach my $file (@files) {
 		} 	
 
 		$AntennasArray[$i] = ([$DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E]);
-		#printf "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
+		#printf STDERR "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
 	}	
-	
-	### Filter Reciever array, skip Firmware updates ######
+	#print STDERR "\n";
+	### Filter Receiver array, skip Firmware updates ######
 	if ($ARGV[0] eq "-sw") {
-		@RecieversArray = FilterReceiverArray(@RecieversArray);	
+		@ReceiversArray = FilterReceiverArray(@ReceiversArray);	
 	}		
 
 	###################### MERGE Antenna and Receiver subarrays hronologically ############################
 	
 	my @Records;
-	$NumberOfReceivers = @RecieversArray;
+	$NumberOfReceivers = @ReceiversArray;
 	#my $counterAnt = @AntennasArray;
 	my $NewDateStart;
 	my $NewDateEnd;
@@ -558,14 +567,14 @@ foreach my $file (@files) {
 
 	while (($counterRec < $NumberOfReceivers) && ($counterAnt < $NumberOfAntennas)) {
 
-		($NewDateStart, $flagStart) = getLaterDate(   $RecieversArray[$counterRec][0], $AntennasArray[$counterAnt][0]);
-		($NewDateEnd,   $flagEnd)   = getEarlierDate( $RecieversArray[$counterRec][1], $AntennasArray[$counterAnt][1]);
+		($NewDateStart, $flagStart) = getLaterDate(   $ReceiversArray[$counterRec][0], $AntennasArray[$counterAnt][0]);
+		($NewDateEnd,   $flagEnd)   = getEarlierDate( $ReceiversArray[$counterRec][1], $AntennasArray[$counterAnt][1]);
 		$flagOverlap = checkDurationOfOverlap($NewDateStart, $NewDateEnd);
 		if ( $flagOverlap eq "PositiveOverlap" ) {
-			$Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $RecieversArray[$counterRec][2], $RecieversArray[$counterRec][3],  $RecieversArray[$counterRec][4], $RecieversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
+			$Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $ReceiversArray[$counterRec][2], $ReceiversArray[$counterRec][3],  $ReceiversArray[$counterRec][4], $ReceiversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
 			$index++;	
 		} else {
-			#print STDERR "\nflagOverlap $flagOverlap \n\n"; 
+			print STDERR "flagOverlap: $flagOverlap \n"; 
 		}
 
 		if ($flagEnd eq "RecChange" ) {
@@ -579,7 +588,7 @@ foreach my $file (@files) {
 			print STDERR "\n ERROR : Cannot distinguish dates of equipment changes\n\n"; 
 		} 
 	}
-	#print "\n";
+	print "\n";
 
     	####  print in TYPE 3 format to console and to the file #### 
 	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
