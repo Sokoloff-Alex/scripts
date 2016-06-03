@@ -541,7 +541,6 @@ foreach my $file (@files) {
 	
 	my @Records;
 	$NumberOfReceivers = @ReceiversArray;
-	#my $counterAnt = @AntennasArray;
 	my $NewDateStart;
 	my $NewDateEnd;
 	my $flagStart;	
@@ -559,8 +558,8 @@ foreach my $file (@files) {
 		if ( $flagOverlap eq "PositiveOverlap" ) {
 			$Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $ReceiversArray[$counterRec][2], $ReceiversArray[$counterRec][3],  $ReceiversArray[$counterRec][4], $ReceiversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
 			$index++;	
-		} else {
-			print STDERR "flagOverlap: $flagOverlap \n"; 
+		#} else {
+			#print STDERR  "flagOverlap: $flagOverlap \n"; 
 		}
 
 		if ($flagEnd eq "RecChange" ) {
@@ -575,8 +574,8 @@ foreach my $file (@files) {
 		} 
 	}
 
-    	####  print in TYPE 3 format to console and to the file #### 
-	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
+    	####  print in TYPE 2 table  to STDOUT #### 
+	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %-20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
 	my @line;
 	my $RecordsNumber = @Records;
 	for (my $row = 0; $row < $RecordsNumber; $row++) {	
