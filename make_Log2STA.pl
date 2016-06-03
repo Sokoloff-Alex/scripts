@@ -15,20 +15,34 @@
 # 		reads all available .log files in current directory
 #	    and prints to the Standatr Output.
 # 
-# 	make_Log2STA.pl -sw LogFilesFolder 
+# 	make_Log2STA.pl -fw LogFilesFolder 
 # 		reads all avaliable .log files in LogFilesFolder directory
 #	    and prints to the Standatr Output, neglecting firmware updates of receiver.  
 #
 ##### options:
 #
-# 	-sw 
+# 	-fw,  --ignore-firmware, -sw
 #		generate Station Information File , neglecting firmware updates.
+#
+#	-nb,  --no-boundaries
+#               set Install. and Remov. dates boundaries of station as empty
+#
+#       -df,  --no-first-boundary
+#		set first Install. date as empty
+#	-nl,  --no-last-boundary
+#       	set last Remov. date as empty
+#
+#	-sb,  --stretch-boundaries
+#		set first Install. date as '1980 01 06 00 00 00'
+#		and last Remove date as    '2099 12 31 00 00 00'.  
+#	-h, --help
+#		show this help first
 # 
 ####
 #
-# Author: Alexandr Sokolov
+# Author: Alexandr Sokolov, KEG
 # e-mail: sokolovalexv@gmail.com
-# 2015, (c)
+# 2016, (c)
 #
 ##########################################################################
 
@@ -282,10 +296,8 @@ sub FilterReceiverArray {
 
 
 sub AddHeaderOfType1 {
-	my $FileName = $_[0];
 	my $datestring = strftime "%e-%b-%Y %H:%M", localtime;
 	#printf("$datestring\n");
-
 	my $String = "Auto Generated *.STA, using make_Log2STA.pl; BSW VERSION 5.2;  $datestring
 --------------------------------------------------------------------------------
 
@@ -298,17 +310,11 @@ TYPE 001: RENAMING OF STATIONS
 STATION NAME          FLG          FROM                   TO         OLD STATION NAME      REMARK
 ****************      ***  YYYY MM DD HH MM SS  YYYY MM DD HH MM SS  ********************  ************************
 ";
-
-	if (!defined($FileName) || $FileName eq '') {
-		print $String;   
-	} else {
-		print $FileName $String;
-	}
+print STDOUT $String;
 }
 
 
 sub AddHeaderOfType2 {
-	my $FileName = $_[0];
 	my $StringType2 = " 
 
 TYPE 002: STATION INFORMATION
@@ -317,16 +323,10 @@ TYPE 002: STATION INFORMATION
 STATION NAME          FLG          FROM                   TO         RECEIVER TYPE         RECEIVER SERIAL NBR   REC #   ANTENNA TYPE          ANTENNA SERIAL NBR    ANT #    NORTH      EAST      UP      DESCRIPTION             REMARK
 ****************      ***  YYYY MM DD HH MM SS  YYYY MM DD HH MM SS  ********************  ********************  ******  ********************  ********************  ******  ***.****  ***.****  ***.****  **********************  ************************
 ";
-
-	if (!defined($FileName) || $FileName eq '') {
-		print $StringType2;   
-	} else {
-		print $FileName $StringType2;
-	}
+print STDOUT $StringType2;   
 }
 
 sub AddHeaderOfTypes345 {
-	my $FileName = $_[0];
 	my $String = "
 
 TYPE 003: HANDLING OF STATION PROBLEMS
@@ -351,29 +351,68 @@ STATION NAME          FLG  FROM                 TO                   MARKER TYPE
 
 
 ";
-
-	if (!defined($FileName) || $FileName eq '') {
-		print $String;   
-	} else {
-		print $FileName $String;
-	}
+print STDOUT $String;   
 }
 
 #########################################################
-
-
-
-#print "\n";
 #print "Start generating STA file from Log files:\n\n";
 my $FLG='001';
 my $dir;
 my $NumberOfArgs = @ARGV;
-if ($NumberOfArgs == 2) {
-	$dir = $ARGV[1];
-} elsif ($NumberOfArgs == 1) {
-	$dir = $ARGV[0];	
+my @options = @ARGV;
+if ($NumberOfArgs == 0) {
+	print "Illegal Number of arguments!\n";
+	die "Specify Directory with *.log files!\n";
+} elsif ($NumberOfArgs <= 4) {
+	$dir = $ARGV[$NumberOfArgs-1];
 } else {
-	print "Illegal Number of arguments!\n";	
+	die "Illegal Number of arguments!\n";	
+}
+
+## print help to SDTERR
+if ( grep( /^-h$/, @options) || grep( /^--help$/, @options) ) {
+	print STDERR "
+################   Generates STA file from gnss station LOG files ##################
+#
+#	Station LOG files must be formated according to:
+#	ftp://igscb.jpl.nasa.gov/pub/station/general/sitelog_instr.txt 
+#
+##### Command form:
+#
+#	make_Log2STA.pl [-option] [directory] > outputFile
+#
+##### simple examples:
+#
+#	make_Log2STA.pl . 
+# 		reads all available .log files in current directory
+#	    and prints to the Standatr Output.
+# 
+# 	make_Log2STA.pl -fw LogFilesFolder 
+# 		reads all avaliable .log files in LogFilesFolder directory
+#		and prints to the Standatr Output, neglecting firmware updates of receiver.
+#
+##### options:
+#
+# 	-fw,  --ignore-firmware, -sw
+#		generate Station Information File , neglecting firmware updates.
+#
+#	-nb,  --no-boundaries
+#		set Install. and Remov. dates boundaries of station as empty
+#
+#	-df,  --no-first-boundary
+#		set first Install. date as empty
+#
+#	-nl,  --no-last-boundary
+#		set last Remov. date as empty
+#
+#	-sb,  --stretch-boundaries
+#		set first Install. date as '1980 01 06 00 00 00'
+#		and last Remove date as    '2099 12 31 00 00 00'.  
+#	-h, --help
+#		show this help first
+#
+##########################################################################################\n" ;
+	die "\n";
 }
 
 #print "Directory: $dir\n";
@@ -532,10 +571,9 @@ foreach my $file (@files) {
 	#print STDERR "\n";
 
 	### Filter Receiver array, skip Firmware updates ######
-	if ($ARGV[0] eq "-sw" || $ARGV[0] eq "--ignore-firmware") {
-		@ReceiversArray = FilterReceiverArray(@ReceiversArray);	
+	if ( grep( /^-fw$/, @options) || grep( /^--ignore-firmware$/, @options) || grep( /^-sw$/, @options)  ) {
+		@ReceiversArray = FilterReceiverArray(@ReceiversArray);
 	}		
-	
 
 	###################### MERGE Antenna and Receiver subarrays hronologically ############################
 	
@@ -574,10 +612,22 @@ foreach my $file (@files) {
 		} 
 	}
 
-    	####  print in TYPE 2 table  to STDOUT #### 
-	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %-20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
-	my @line;
+ 	#### adjust epoch boundaries ########
 	my $RecordsNumber = @Records;
+	if (      grep( /^-nb$/, @options) || grep( /^--no-boundaries$/,     @options) ) {
+		$Records[0][3] = '                   ';
+		$Records[$RecordsNumber-1][4] = '                   ';
+	} elsif ( grep( /^-nf$/, @options) || grep( /^--no-first-boundary$/, @options) ) {
+		$Records[0][3] = '                   ';
+	} elsif ( grep( /^-nl$/, @options) || grep( /^--no-last-boundary$/,  @options) ) {
+		$Records[$RecordsNumber-1][4] = '                   ';
+	} elsif ( grep( /^-sb$/, @options) || grep( /^-stretch-boundaries$/, @options) ) {
+		$Records[0][3] = '1980 01 06 00 00 00';
+	}
+
+	####  print in TYPE 2 table  to STDOUT ####
+	my @format = ("%4s"," %-12s ","    %3s"," %20s"," %20s "," %-20s "," %-20s "," %6s "," %-20s "," %-20s ", " %6s "," %8.4f ", " %8.4f ", " %8.4f ", " %-22s ", " %-24s\n");
+	my @line;	
 	for (my $row = 0; $row < $RecordsNumber; $row++) {	
 		@line = ($Records[$row][0], $Records[$row][1], $Records[$row][2], $Records[$row][3], $Records[$row][4], $Records[$row][5],$Records[$row][6], $Records[$row][7], $Records[$row][9], $Records[$row][10], $Records[$row][11], $Records[$row][13], $Records[$row][14], $Records[$row][12], $Records[$row][15], $Records[$row][8]) ;
 		for (my $col = 0; $col <= 15; $col++) {
