@@ -8,4 +8,4 @@ various scripts for the work
   ftp://igscb.jpl.nasa.gov/pub/station/general/sitelog_instr.txt
   
 # STA_GAMIT_2_BERNESE.sh
-Bash-Script Converting GAMIT STAtion informaion file into Bernese format .STA
+Bash-Script Converting GAMIT station.info (Station Informaion File) into Bernese format .STA
