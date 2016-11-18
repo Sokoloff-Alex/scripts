@@ -35,6 +35,8 @@
 #	-sb,  --stretch-boundaries
 #		set first Install. date as '1980 01 06 00 00 00'
 #		and last Remove date as    '2099 12 31 00 00 00'.  
+#	-v,   --verbose : verbose mode, print to stderr additional info
+#
 #	-h, --help
 #		show this help first
 # 
@@ -58,7 +60,7 @@ use Data::Dumper qw(Dumper);
 
 ################################################################################
 #			
-#      subroutines	
+#      subroutines / methods	
 #			
 ################################################################################
 
@@ -295,6 +297,7 @@ sub FilterReceiverArray {
 ##########################################################
 
 
+
 sub AddHeaderOfType1 {
 	my $datestring = strftime "%e-%b-%Y %H:%M", localtime;
 	#printf("$datestring\n");
@@ -355,7 +358,13 @@ print STDOUT $String;
 }
 
 #########################################################
+#
+# subroutines / methods END
+#
+#########################################################
+#
 #print "Start generating STA file from Log files:\n\n";
+
 my $FLG='001';
 my $dir;
 my $NumberOfArgs = @ARGV;
@@ -408,6 +417,9 @@ if ( grep( /^-h$/, @options) || grep( /^--help$/, @options) ) {
 #	-sb,  --stretch-boundaries
 #		set first Install. date as '1980 01 06 00 00 00'
 #		and last Remove date as    '2099 12 31 00 00 00'.  
+#
+#	-v,   --verbose : verbose mode, print to stderr additional info
+#
 #	-h, --help
 #		show this help first
 #
@@ -415,15 +427,32 @@ if ( grep( /^-h$/, @options) || grep( /^--help$/, @options) ) {
 	die "\n";
 }
 
-#print "Directory: $dir\n";
-#print "file-list\n";
-
-
-my @files = glob("$dir/*.log");  # skan directory for *.log files and save full path to array
-foreach my $file (@files) {  ## list of *.log files
-   # print "$file\n";
+# verbose	
+if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+	print STDERR "Verbose mode\n";
+	print STDERR "Directory: $dir\n";
+	print STDERR " --- file-list --- \n";
 }
-#print "\n"; 
+
+# fetch file names
+my @files = glob("$dir/*.log");  # skan directory for *.log files and save full path to array
+foreach my $file (@files) {      # list of *.log files
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		   print STDERR "$file\n";	
+	}
+}
+
+# verbose	
+if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR " --- end of list --- \n";
+	    print STDERR "\n"; 
+}
+
+####
+# Start writing to STDOUT
+###
 
 ################# Generate TYPE 001: RENAMING OF STATIONS #####################################
 #open(my $NewSTA, '>', "$dir/New.STA")  or die "Could not open file";
@@ -440,6 +469,13 @@ foreach my $file (@files) {
 		push(@LogFile,$_);
 	}
 	close(LogFile);
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR " -------------------\n";			
+		print STDERR "File: $file\n"; 
+		print STDERR " -------------------\n";
+	}
 
 	my $string = first { /Four Character ID        :/ } @LogFile;		
 	my $mark_name = GET_MARK_NAME($string);
@@ -462,7 +498,13 @@ foreach my $file (@files) {
 	my $Remark = substr $file, -17;
 	
 	printf STDOUT         "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG, $DateInstalled, $DateRemoved, $mark_name, $Remark;
-#	printf $NewSTA "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG, $DateInstalled, $DateRemoved, $mark_name, $Remark;
+	
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print  STDERR " --- TABLE TYPE 001 ---\n";		
+		printf STDERR "%4s %-11s %8s %20s %20s %5s*                 %-24s\n", $mark_name, $mark_number, $FLG, $DateInstalled, $DateRemoved, $mark_name, $Remark;
+		print  STDERR " -------------------\n";
+	}
 }
 
 ############################ Generate TYPE 002: STATION INFORMATION #########################
@@ -499,8 +541,15 @@ foreach my $file (@files) {
 	if ($LastReceiverIndex == -1) {
 		$LastReceiverIndex  = first_index { /4.   GNSS Antenna Information/ } @LogFile;     
 	}
+	# debug, if no "3.x" used in logfile
 	my @ReceiversData = @LogFile[$FirstReceiverIndex..$LastReceiverIndex-2];
-	#print STDERR "@ReceiversData";
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR " --- Receiver Data ---\n";
+		print STDERR "@ReceiversData";		
+	}
+
 	
 	my @Rec               = grep { /Receiver Type            :/ } @ReceiversData;
 	my @RecSerNumber      = grep { /Serial Number            :/ } @ReceiversData;
@@ -508,7 +557,17 @@ foreach my $file (@files) {
 	my @DateInstalled     = grep { /Date Installed           :/ } @ReceiversData;
 	my @DateRemoved       = grep { /Date Removed             :/ } @ReceiversData;	
 	my $NumberOfReceivers = true { /Receiver Type            :/ } @ReceiversData;
-	#print STDERR "Number of Receivers: $NumberOfReceivers\n";
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR "Number of Receivers: $NumberOfReceivers\n";	
+		if ( $NumberOfReceivers == 0 ) {
+			print STDERR "################################################\n";
+			print STDERR "ERORR: NO RECEIVERS FOUNS in $file \n";
+			print STDERR "################################################\n";
+		}			
+	}
+
 	my @ReceiversArray;
 
 	for (my $i=0; $i <= $NumberOfReceivers-1; $i++) {
@@ -519,8 +578,12 @@ foreach my $file (@files) {
 		my $DateInstalled = GET_DATE($DateInstalled[$i]);
 		my $DateRemoved   = GET_DATE($DateRemoved[$i]);
 
-		$ReceiversArray[$i] = ([$DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers]); ## Contains ALL Receivers DATA 
-		#printf STDERR "%20s %20s %-20s %-20s %10s %-20s \n", $DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers; 	 
+		$ReceiversArray[$i] = ([$DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers]); ## Contains ALL Receivers DATA
+
+	 	# verbose	
+		if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+			printf STDERR "%20s %20s %-20s %-20s %10s %-20s \n", $DateInstalled, $DateRemoved, $Rec, $RecSerNumber, $RecNumber, $FirmWareVers; 	
+		} 
 	}
 	#print STDERR "\n";
 
@@ -532,8 +595,14 @@ foreach my $file (@files) {
 		$LastAntennaIndex  = first_index { /5.   Surveyed Local Ties/ } @LogFile;
 	}
 	my @AntennasData = @LogFile[$FirstAntennaIndex..$LastAntennaIndex-2];
-	#print "@AntennasData";
+
+ 	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR " --- Antenna Data ---\n";
+		print STDERR "@AntennasData";
+	} 
 	
+	# parse parameters
 	my @Antenna = grep { /Antenna Type             :/ } @AntennasData;
 	my @AntennaRadomType = grep  { /Antenna Radome Type      :/}  @AntennasData;
 	my @AntSerNumber = grep { /Serial Number            :/ } @AntennasData;
@@ -544,7 +613,17 @@ foreach my $file (@files) {
 	@DateInstalled= grep { /Date Installed           :/ } @AntennasData;
 	@DateRemoved = grep { /Date Removed             :/ } @AntennasData;	
 	my $NumberOfAntennas = true { /Antenna Type             :/ } @AntennasData;
-	#print STDERR "Number of Antennas: $NumberOfAntennas\n";
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR "Number of Antennas: $NumberOfAntennas\n";
+		if ( $NumberOfAntennas == 0 ) {
+			print STDERR "################################################\n";
+			print STDERR "ERORR: NO ANTENNAS FOUNS in $file \n";
+			print STDERR "################################################\n";
+		}
+	}
+
 	
 	my @AntennasArray;
 	for (my $i=0; $i <= $NumberOfAntennas-1; $i++) {		
@@ -557,21 +636,38 @@ foreach my $file (@files) {
 		my $DateInstalled  = GET_DATE($DateInstalled[$i]);		
 		my $DateRemoved    = GET_DATE($DateRemoved[$i]);
 
-		if ( length($Antenna) ne 20 ) {		
-			#print STDERR "\nAntenna Error:\n";
-			#print STDERR "$Antenna\n";
-			#print STDERR "$AntennaRadomType\n";
+		if ( length($Antenna) ne 20 ) {	
+
+			# verbose	
+			if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+				print STDERR "\nAntenna Error:\n";
+				print STDERR "$Antenna\n";
+				print STDERR "$AntennaRadomType\n";
+			}
+
 			$Antenna = substr $Antenna, 0,15;
 			$Antenna = sprintf ("%-15s %4s", $Antenna, $AntennaRadomType);
 		} 	
 
 		$AntennasArray[$i] = ([$DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E]);
-		#printf STDERR "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
+		
+		# verbose	
+		if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+			printf STDERR "%20s %20s %22s %10s %10s %8.4f %8.4f %8.4f \n", $DateInstalled, $DateRemoved, $Antenna, $AntSerNumber, $AntNumber, $Eccentricity_U, $Eccentricity_N, $Eccentricity_E; 	 
+		}	
 	}	
-	#print STDERR "\n";
+
+	# verbose	
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR "\n";
+	}
 
 	### Filter Receiver array, skip Firmware updates ######
 	if ( grep( /^-fw$/, @options) || grep( /^--ignore-firmware$/, @options) || grep( /^-sw$/, @options)  ) {
+		# verbose	
+		if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+			print STDERR "option: skip firmware updates\n";
+		}
 		@ReceiversArray = FilterReceiverArray(@ReceiversArray);
 	}		
 
@@ -596,8 +692,11 @@ foreach my $file (@files) {
 		if ( $flagOverlap eq "PositiveOverlap" ) {
 			$Records[$index] = ([$mark_name, $mark_number, $FLG, $NewDateStart, $NewDateEnd, $ReceiversArray[$counterRec][2], $ReceiversArray[$counterRec][3],  $ReceiversArray[$counterRec][4], $ReceiversArray[$counterRec][5], $AntennasArray[$counterAnt][2], $AntennasArray[$counterAnt][3], $AntennasArray[$counterAnt][4],$AntennasArray[$counterAnt][5], $AntennasArray[$counterAnt][6],  $AntennasArray[$counterAnt][7], $Description ]);		
 			$index++;	
-		#} else {
-			#print STDERR  "flagOverlap: $flagOverlap \n"; 
+		} else {
+			# verbose	
+			if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+				print STDERR  "flagOverlap: $flagOverlap \n"; 
+			}
 		}
 
 		if ($flagEnd eq "RecChange" ) {
@@ -632,7 +731,11 @@ foreach my $file (@files) {
 		@line = ($Records[$row][0], $Records[$row][1], $Records[$row][2], $Records[$row][3], $Records[$row][4], $Records[$row][5],$Records[$row][6], $Records[$row][7], $Records[$row][9], $Records[$row][10], $Records[$row][11], $Records[$row][13], $Records[$row][14], $Records[$row][12], $Records[$row][15], $Records[$row][8]) ;
 		for (my $col = 0; $col <= 15; $col++) {
 			printf ($format[$col], $line[$col]) ;
-			#printf ($NewSTA $format[$col], $line[$col]);
+	
+			# verbose	
+			if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+				printf STDERR ( $format[$col], $line[$col]); 
+			}
 		}		
 	}
 }
@@ -641,6 +744,13 @@ foreach my $file (@files) {
 #&AddHeaderOfTypes345($NewSTA); # Add headers for types 3, 4 and 5 to the file
 
 #close $NewSTA;
-#print "\nNew STA file saved in: $dir/New.STA";
-             
-#print "\nDone\n\n"; 
+
+# verbose	
+if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+	#print "\nNew STA file saved in: $dir/New.STA";
+	print STDERR "\nDone\n\n"; 
+}
+
+###########
+# The End 
+###########
