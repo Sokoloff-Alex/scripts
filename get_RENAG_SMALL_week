@@ -1,0 +1,34 @@
+#!/bin/bash
+# Loading RINEX files and additional data
+
+args=("$@")
+GPSWeekStart=${args[0]}
+GPSWeekEnd=${args[1]}
+
+if (( $# == 1))
+then
+	GPSWeekEnd=$GPSWeekStart
+fi
+
+echo "GPSWeekStart $GPSWeekStart"
+echo "GPSWeekEnd   $GPSWeekEnd"
+
+for(( GPSWeek=GPSWeekStart; GPSWeek<=$GPSWeekEnd; GPSWeek++ ))
+do {
+	echo "Loading GPS week $GPSWeek"
+	# Loading RINEX files
+	bash get_RENAG_SMALL_rnx $GPSWeek
+
+
+	# Loadind Orbit, Clock and ERP
+	bash get_code2Data $GPSWeek
+	echo "Orbits, Clocks and Ephemeris are loaded"
+
+
+	# Loading  differential code biases
+	bash get_code2BSW52 $GPSWeek
+	echo "Differential-Code-Biases are loaded"
+	echo "Data for GPS-Week $GPSWeek are loaded"
+
+} done
+echo "Done"

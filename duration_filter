@@ -1,0 +1,67 @@
+#!/bin/bash 
+echo 'Select staton that worked more than 2 years
+'
+Networks='ALPEN AUSTRIA FREDNET RENAG'
+Exeptions='elmo helm ferh ferr hfk2 hflk koe2 koet ktz2 ktzb pat2 patk pfa2 pfan sbg2 sbgz trf2 trfb udin udi1' # remaiming pairs
+
+for Network in $Networks
+do
+echo $Network 'network
+List of sites available 
+for more than 2 years 
+
+	START	END
+site yyyy ddd yyyy ddd files
+============================
+'  > $Network.Table_selected.txt
+
+LastYearLimit=2014
+LastDOYLimit=365
+counter=0
+NumberOfSelectedSites=0
+while read line 
+do
+counter=$((counter + 1))
+if (( $counter > 7))
+then
+	line=( $line)
+	Marker=${line[0]}
+	FirstYear=${line[1]}
+	FirstDOY=${line[2]}
+	LastYear=${line[3]}
+	LastDOY=${line[4]}	
+	NumberOfFiles=${line[5]}
+	#echo "$Marker	$FirstYear $FirstDOY	$LastYear $LastDOY	$NumberOfFiles"
+	if (( $LastYear > $LastYearLimit)) # Set limit year
+	then
+	EndYear=$LastYearLimit
+	EndDOY=$LastDOYLimit
+	else
+	EndYear=$LastYear
+	EndDOY=$LastDOY	
+	fi
+	StartWeek=$(gps_date -yd $FirstYear $FirstDOY -o %W %n)
+	EndWeek=$(gps_date -yd $EndYear $EndDOY -o %W %n)
+	
+	DuartionInWeeks=$((EndWeek - StartWeek))
+	#echo "$Marker	$StartWeek	$EndWeek	 $DuartionInWeeks"
+	#if (( $DuartionInWeeks > 104 ))
+	#if [[ ${Exeptions[*]} =~ $Marker ]]
+	#then
+	#echo 'Exeption found'
+	#fi
+	if (( $DuartionInWeeks > 104 )) || [[ ${Exeptions[*]} =~ $Marker ]] ## 104 weeks == 2 years
+	then
+	NumberOfSelectedSites=$((NumberOfSelectedSites + 1))
+	echo "$Marker $FirstYear $FirstDOY $LastYear $LastDOY $NumberOfFiles" 
+	echo "$Marker $FirstYear $FirstDOY $LastYear $LastDOY $NumberOfFiles" >>  $Network.Table_selected.txt
+	fi
+fi
+
+done < $Network.Table_all.txt
+echo "
+TOTAL: $NumberOfSelectedSites sites
+" 
+echo "TOTAL: $NumberOfSelectedSites sites" >> $Network.Table_selected.txt
+done
+echo 'done'

@@ -1,0 +1,38 @@
+#!/bin/bash
+# Count RINEX files in Datapool $D
+
+
+echo "fileName	Week  wd     NoFiles" > countRinexFiles.table
+echo "====================================" >> countRinexFiles.table  	
+
+for GPSWeek in {1252..1252}
+do {
+	for wd in {0..6}
+	do {
+		yr=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%y") # yy
+		doy=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%j") # doy		
+		fileName="????"$doy'0.'$yr"?.Z" 		
+			
+		NumberOfFiles=$(ls -l  $D/RINEX/$fileName | wc -l)
+		#echo  "$fileName	$GPSWeek  $wd		$NumberOfFiles"  
+		echo  "$fileName	$GPSWeek  $wd		$NumberOfFiles" >> countRinexFiles.table
+		#check result file for same number
+		NumberOfResults=$(grep -c '   A\|   W' 'F1_'$ry$doy'0.CRD' ) 
+		if (($NumberOfResults < $NumberOfFiles))
+		then
+			echo "Problem!!!   in $GPSweek $wd "
+			echo "NumberOfFiles   : $NumberOfFiles"
+			echo "NumberOfResults : $NumberOfResults"	
+			
+			ls -l  $D/RINEX/$fileName > Files_list_$yr$doy
+	
+		else 
+			echo "Error! "
+			echo "NumberOfFiles   : $NumberOfFiles"
+			echo "NumberOfResults : $NumberOfResults"
+		fi
+
+	} done
+} done
+
+gedit countRinexFiles.table &

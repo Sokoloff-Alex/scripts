@@ -1,0 +1,36 @@
+#!/bin/bash
+
+Site="$1"
+
+
+cp ALP_NET.CRD ALP_NET.CRD_old
+cp ALP_NET.VEL ALP_NET.VEL_old
+
+String_CRD_old=$(grep $Site ALP_NET.CRD)
+String_VEL_old=$(grep $Site ALP_NET.VEL)
+
+String_CRD_new=$(grep $Site FINAL.CRD | cut -c1-70)
+String_VEL_new=$(grep $Site FINAL.VEL | cut -c1-70)
+
+String_CRD_new=$String_CRD_new"I"
+String_VEL_new=$String_VEL_new"I    EURA"
+
+
+echo "$String_CRD_old"
+echo "$String_VEL_old"
+echo "$String_CRD_new"
+echo "$String_VEL_new"
+
+sed "s/$String_CRD_old/$String_CRD_new/g" ALP_NET.CRD_old > ALP_NET.CRD
+sed "s/$String_VEL_old/$String_VEL_new/g" ALP_NET.VEL_old > ALP_NET.VEL
+
+rm ALP_NET.CRD_old
+rm ALP_NET.VEL_old
+
+grep --color $Site ALP_NET.CRD ALP_NET.VEL FINAL.CRD FINAL.VEL
+
+
+
+
+
+

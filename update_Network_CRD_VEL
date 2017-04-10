@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "update Network non IGS sites"
+
+while read Site
+do {
+	echo $Site
+
+	bash ./updateSite $Site
+
+} done < ALP_NET.LIST_no_IGS
+
+
+gedit ALP_NET.CRD &

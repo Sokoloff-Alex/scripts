@@ -1,0 +1,14 @@
+#!/bin/bash
+echo "Extracting info from RINEX headers"
+
+sites="aber agde aigl ajac alle"
+for site in $sites;
+do
+echo $site 'start'
+DIR=$(echo $site |awk '{print toupper($0)}')
+mkdir $DIR
+ls ~/Documents/DGFI/examples/20??/???/$site* |awk '{printf"zcat %s|head -50 >%sh\n~/Documents/DGFI/get_info_rinex.pl %sh\n",$1,substr($1,46,11),substr($1,46,11)}' |sh >>$DIR/$site.all_headers
+echo $site 'is done'
+rm $sitels*.??h
+done
+echo "Done"

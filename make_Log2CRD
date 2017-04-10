@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+#  make CRD file for Bernese from Logfiles
+
+list=$1
+
+date_time=$(date +"%0e-%b-%Y %H:%M")
+
+echo "ITRF  coordinates                                              $date_time
+--------------------------------------------------------------------------------
+LOCAL GEODETIC DATUM: ITRF             EPOCH: 2005-01-01 00:00:00
+
+NUM  STATION NAME           X (M)          Y (M)          Z (M)     FLAG
+" 
+
+counter=0
+while read filename 
+do {
+	counter=$(($counter+1))
+	ID=$(grep 'Four Character ID' $filename  | cut --characters=33-36)
+	DOMES=$(grep 'IERS DOMES Number' $filename  | cut --characters=33-41)
+	X=$(grep 'X coordinate' $filename | cut --characters=33- )
+	Y=$(grep 'Y coordinate' $filename | cut --characters=33- )
+	Z=$(grep 'Z coordinate' $filename | cut --characters=33- )
+
+
+	#echo "  1  ADE1 50109S001   -3939182.23402  3467075.32726 -3613220.55988    IGb08"
+	#echo $counter $ID $DOMES $X $Y $Z
+	printf "%03d  %4s %-9s %15s%15s%15s     ITRF\n" $counter $ID $DOMES $X $Y $Z
+
+} done < list
+
+echo ""

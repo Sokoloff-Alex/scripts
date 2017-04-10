@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Loading Orbits, Clocks, ERP from CODE for GPS-week into Bernese Datapool, $D/COD/
+#
+# Christof Voelksen, Alexandr Solokov, KEG
+# 21.09.2015
+
+PATH_COD="$D/COD"       
+echo $PATH_COD
+ftp_loc="ftp://ftp.unibe.ch/"
+
+cd $PATH_COD
+
+head='COD'     
+tail='.EPH.Z'
+tail2='7.ERP.Z'
+tail3='.CLK.Z'
+wild="*"  
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do
+{
+doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+week=`$HOME/bin/gps_date -wd $1 $wd  -o "%W"`
+mo=`$HOME/bin/gps_date -wd $1 $wd  -o "%m"`
+echo $yr $doy $wd $mo $week
+file=$head$week$wd$tail   
+echo $file
+#wget -nc ftp://$path/$yr/$head/$file
+ftp_dir="aiub/CODE/"$yr/
+echo $ftp_dir
+wget -N $ftp_loc$ftp_dir$file
+#
+# CLK
+fileCLK=$head$week$wd$tail3
+wget -N $ftp_loc$ftp_dir$fileCLK
+
+}
+done
+
+#
+#  ERP
+#
+file=$head$week$tail2
+wget -N $ftp_loc$ftp_dir$file
+
+
+
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17550.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17551.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17552.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17553.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17554.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17555.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17556.EPH.Z
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/2013/COD17557.ERP.Z
+
+
+
+

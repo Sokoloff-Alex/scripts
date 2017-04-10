@@ -1,0 +1,52 @@
+#!/bin/bash
+# Loading RINEX files for Specified site 
+
+ftp_dir_IGS="ftp://igs.bkg.bund.de/IGS/obs" 
+
+args=("$@")
+Site=${args[0]}
+GPSWeekStart=${args[1]}
+GPSWeekEnd=${args[2]}
+
+if (( $# == 2))
+then
+	GPSWeekEnd=$GPSWeekStart
+fi
+
+echo "GPSWeekStart $GPSWeekStart"
+echo "GPSWeekEnd   $GPSWeekEnd"
+
+for(( GPSWeek=GPSWeekStart; GPSWeek<=$GPSWeekEnd; GPSWeek++ ))
+do {
+
+	load_Rinex_files_ftp "$GPSWeek" "$ftp_dir_IGS" "$Site"
+
+
+} done
+echo "RINEX files for Site $Site are downloaded"
+echo "Done"
+
+
+function load_Rinex_files_ftp() {	
+	
+	GPSWeek="$1"
+	ftp_dir="$2"
+	Sites="$@"
+	cd $PATH_RNX   
+	pwd
+
+	for wd in "0 1 2 3 4 5 6"
+	do {
+		yr=$( ~/bin/gps_date -wd $GPSWeek $wd  -o "%Y") # YYYY
+		yr2=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%y") # yy
+		mo=$( ~/bin/gps_date -wd $GPSWeek $wd  -o "%m") # mm
+		day=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%d") # dd
+		doy=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%j") # doy
+		tail=$doy"0."$yr2"d.Z"		
+		file_rnx=$Site$tail
+		echo $ftp_dir/$yr/$doy/$file_rnx
+		wget -q -N $ftp_dir/$yr/$doy/$file_rnx
+		
+	} done
+}
+

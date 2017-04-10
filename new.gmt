@@ -1,0 +1,49 @@
+#!/bin/bash
+# plot Resudials for specified site
+
+SITE=$1
+
+bash get_resudials $SITE
+
+fileName="$SITE"_plot
+ps=$fileName.ps
+
+echo $fileName
+
+echo "Plot resudial for $SITE" 
+
+more "$SITE".HLM | awk '{printf "%10s %7.2f\n", $3, $4}' > North
+more "$SITE".HLM | awk '{printf "%10s %7.2f\n", $3, $5}' > East
+more "$SITE".HLM | awk '{printf "%10s %7.2f\n", $3, $6}' > Up
+
+R=-R2003-12-01T/2014-02-01T/-50/50
+J=-Jx0.007/0.15
+
+#GMT psbasemap $R $J -Bsf01oa01Y/ -Bpa3o/g50f2a10  -K > $ps
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f2a10:"Resudials, [mm]"::."$SITE, Resudials":WESn  -K > $ps
+
+GMT psxy $R $J North -W5/000/050/025 -K -O >> $ps
+GMT psxy $R $J East  -W5/120/100/125 -K -O >> $ps
+GMT psxy $R $J Up    -W5/200/050/025 -K -O >> $ps
+
+cat << EOF |GMT pslegend $R $J -Dx9i/4.5i/1i/1i/BL  -O -K >> $ps
+S 0.1i r 0.2i 000/050/025  0.25p 0.3i North
+S 0.1i r 0.2i 120/100/125  0.25p 0.3i Easth
+S 0.1i r 0.2i 200/050/025  0.25p 0.3i Up
+EOF
+
+ps2pdf $ps $fileName.pdf
+evince $fileName.pdf &
+#convert $fileName.pdf $fileName.png
+#eog $fileName.png &
+#psresize -pA4 -pA3 $fileName.pdf "$fileName"_A3.pdf
+rm $fileName.ps
+
+#rm North
+#rm East
+#rm Up
+
+echo 'DONE'
+
+
+

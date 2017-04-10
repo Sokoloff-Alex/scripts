@@ -1,0 +1,109 @@
+#!/bin/bash
+# Transform coordinates from ITRF2008 (at epoch Tc) into ETRF2000 (at epoch 2000)
+# Command:
+# 	./ITRF2ETRF InputFile
+#
+# Output written to the standard output
+# Input / Output File format
+# "$SITEName    $X $Y    $Z  $vX  $vY  $vZ "
+#
+# Tested by http://www.epncb.oma.be/_productsservices/coord_trans/index.php
+# 
+# Due to that coordinates have central epoch Tc, and transformation parameter given for epoch 2000
+# Transfromation is done in two steps: ITFR2008 (Tc) -> ITRF2000 (2000.00) -> ETRF2000 (2000.00)
+#
+# Transformation parameters are also propogated to the central epoch Tc using their rates.
+# 
+# Alexandr Sokolov, KEG
+# 04.03.2016
+
+filename=$1;
+#echo "filename:$filename:" 1>&2
+Tc=$2;       # Central Epoch from *CRD file in yyyy.yy format
+#echo "Central Epoch:$Tc"   1>&2
+
+
+while read line 
+do {
+	line=($line)
+	SITE_RADOM=${line[0]}
+	X_ITRF2008=${line[1]}
+	Y_ITRF2008=${line[2]}
+	Z_ITRF2008=${line[3]} 
+	vX_ITRF2008=${line[4]}
+	vY_ITRF2008=${line[5]}
+	vZ_ITRF2008=${line[6]} 
+	#	echo "$SITE_RADOM    $X_ITRF2008 $Y_ITRF2008  $Z_ITRF2008    $vX_ITRF2008  $vY_ITRF2008  $vZ_ITRF2008" | awk '{printf"%-15s  %15.5f  %15.5f  %15.5f  %10.6f %10.6f %10.6f \n", $1, $2, $3, $4, $5, $6, $7}' #>> ITRF_CRV_VEL 
+	
+	######## Transformation from ITRF to ETRF  (substracting the plate motion)###########
+	
+	#   ITRF2008 > ITRF2000 , ok !
+	#   transformation parameters from 
+	#   http://itrf.ensg.ign.fr/doc_ITRF/Transfo-ITRF2008_ITRFs.txt
+	#
+	#    Rxyz    = [0 0 0];
+	#    Rdotxyz = [0 0 0];
+	#    
+	D=0.00000000134;
+	Ddot=0.00000000008;
+	D=$(echo "$D + $Ddot * ( "$Tc" - 2000.00 )" | bc);
+    
+	#T =    [ -0.0019 -0.0017 -0.0105] ; # [m], ITRF2008 > ITRF2000 at 2000.0
+	#Tdot = [  0.0001  0.0001 -0.0018] ; # [m/yr]   
+	#T = T + Tdot*(Tc-2000); # propagate translation to the central epoch Tc 
+	#    R_I2000(i,:) = R_I2008(i,:) + T    + D   * R_I2008(i,:);
+	#    V_I2000(i,:) = V_I2008(i,:) + Tdot + Ddot* R_I2008(i,:);
+	tx=-0.0019;
+	ty=-0.0017;
+	tz=-0.0105;
+	txdot=0.0001;
+	tydot=0.0001;
+	tzdot=-0.0018;	
+    # propagate paramt from epoch 2000.0 to epoch Tc (2005)
+	tx=$(echo "$tx + $txdot*( "$Tc" - 2000.00 )" | bc);
+	ty=$(echo "$ty + $tydot*( "$Tc" - 2000.00 )" | bc);
+	tz=$(echo "$tz + $tzdot*( "$Tc" - 2000.00 )" | bc);
+	
+	X_ITRF2000=$(echo "$X_ITRF2008 + $tx + $D*$X_ITRF2008" | bc )
+	Y_ITRF2000=$(echo "$Y_ITRF2008 + $ty + $D*$Y_ITRF2008" | bc )
+	Z_ITRF2000=$(echo "$Z_ITRF2008 + $tz + $D*$Z_ITRF2008" | bc )
+	
+	vX_ITRF2000=$(echo "$vX_ITRF2008 + $txdot + $Ddot*$X_ITRF2008" | bc )
+	vY_ITRF2000=$(echo "$vY_ITRF2008 + $tydot + $Ddot*$Y_ITRF2008" | bc )
+	vZ_ITRF2000=$(echo "$vZ_ITRF2008 + $tzdot + $Ddot*$Z_ITRF2008" | bc )
+	
+	#	echo "$SITE_RADOM    $X_ITRF2000 $Y_ITRF2000  $Z_ITRF2000    $vX_ITRF2000  $vY_ITRF2000  $vZ_ITRF2000" | awk '{printf"%-15s  %15.5f  %15.5f  %15.5f  %10.6f %10.6f %10.6f \n", $1, $2, $3, $4, $5, $6, $7}'
+
+	# Transfrm from ITRF2000 to ETRF2000
+	# From table 5 # http://etrs89.ensg.ign.fr/memo-V8.pdf
+	Rdot1=0.081; 
+	Rdot2=0.490; 
+	Rdot3=-0.792;
+	# conv mas/y -> [rad/yr], 1 [mas] = 4.8481368 * 10E-9  [rad]
+	#mas2rad =  "2*pi / (360 * 60 * 60 * 1000) = 4.8481368 * 10E-9 
+	Rdot1=$(echo "$Rdot1*0.0000000048481368" | bc) # rad/yr
+	Rdot2=$(echo "$Rdot2*0.0000000048481368" | bc) # rad/yr
+	Rdot3=$(echo "$Rdot3*0.0000000048481368" | bc) # rad/yr
+
+	# D = 0
+	# Ddot = 0
+	tx=0.054;
+	ty=0.051;
+	tz=-0.048;
+	txdot=0.0;
+	tydot=0.0;
+	tzdot=0.0;	
+
+	X_ETRF2000=$(echo "$X_ITRF2000 + $tx + (       0            - $Rdot3*$Y_ITRF2000 + $Rdot2*$Z_ITRF2000)*($Tc - 1989)" | bc )
+	Y_ETRF2000=$(echo "$Y_ITRF2000 + $ty + ( $Rdot3*$X_ITRF2000 +         0          - $Rdot1*$Z_ITRF2000)*($Tc - 1989)" | bc )
+	Z_ETRF2000=$(echo "$Z_ITRF2000 + $tz + (-$Rdot2*$X_ITRF2000 + $Rdot1*$Y_ITRF2000 +       0           )*($Tc - 1989)" | bc )
+	
+	vX_ETRF2000=$(echo "$vX_ITRF2000 + $txdot +       0            - $Rdot3*$Y_ITRF2000 + $Rdot2*$Z_ITRF2000" | bc )
+	vY_ETRF2000=$(echo "$vY_ITRF2000 + $tydot + $Rdot3*$X_ITRF2000 +        0           - $Rdot1*$Z_ITRF2000" | bc )
+	vZ_ETRF2000=$(echo "$vZ_ITRF2000 + $tzdot - $Rdot2*$X_ITRF2000 + $Rdot1*$Y_ITRF2000 +       0           " | bc )
+
+	echo "$SITE_RADOM $X_ETRF2000 $Y_ETRF2000 $Z_ETRF2000 $vX_ETRF2000 $vY_ETRF2000 $vZ_ETRF2000" | awk '{printf"%-15s  %15.5f  %15.5f  %15.5f  %10.6f %10.6f %10.6f \n", $1, $2, $3, $4, $5, $6, $7}'
+} done < $filename
+
+
+

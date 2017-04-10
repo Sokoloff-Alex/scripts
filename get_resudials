@@ -1,0 +1,34 @@
+#!/bin/bash
+
+rm $1.HLM
+
+#grep $1 $S/RNX2SNX/20??/STA/F1_*  > q  # | grep '    A\|    W' > q
+#grep $1 Results_F1/F1_* | grep '    A\|    W' > q
+grep $1 Resudials_[3-4]/HLM*.OUT > q 
+
+
+while read line 
+do {
+
+	year=$(echo $line | cut -c16-17)
+	doy=$(echo  $line | cut -c18-20)
+	#echo $year $doy
+
+	year="20$year"
+
+	dd=`$HOME/bin/gps_date -yd $year $doy  -o "%d"`
+	mm=`$HOME/bin/gps_date -yd $year $doy  -o "%m"`
+	YYYY=`$HOME/bin/gps_date -yd $year $doy  -o "%Y"`
+
+
+	#echo "$year $doy $YYYY $mm $dd $line" | awk '{printf("%4d\t%3s\t%4s-%2s-%2s\t%10.2f\t%10.2f\t%10.2f\t%1s \n", $1, $2, $3,$4,$5, $16, $17, $18, $20)}'	
+	echo "$year $doy $YYYY $mm $dd $line" | awk '{printf("%4d\t%3s\t%4s-%2s-%2s\t%10.2f\t%10.2f\t%10.2f\t%1s \n", $1, $2, $3,$4,$5, $16, $17, $18, $20)}' >> $1.HLM
+} done < q 
+rm q
+
+#gedit $1.HLM &
+
+#/VENUS/GPSDATA/ALPEN/SAVEDISK/RNX2SNX/2004/STA/F1_043630.CRD: 54  BRST 10004M004    4231162.57569  -332746.68161  4745130.92630    A
+#Results_F1/F1_040010.CRD:372  SIMA SIMA         4400833.95805   417279.48804  4582828.21236
+#Resudials/HLM040010.OUT: |   7 | AIGL 10059M001   | I A |      23.84     -7.81    -27.03 | M |
+

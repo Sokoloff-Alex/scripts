@@ -1,0 +1,6 @@
+#!/bin/bash
+
+Network='Austria'
+echo 'Extracting LLH coordinates for all stations in network' $Network
+
+ls $P/$Network/OUT/F1_??????.OUT 

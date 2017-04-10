@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#$Destination=$1
+
+echo "copy from Solution files from SAVEDISK"
+
+# solution from :
+# YYYY doy    week d
+# 2004 003 => 1251 6
+# 2004 004 => 1252 0
+# 2004 005 => 1252 1
+# 2004 006 => 1252 2
+
+
+#days="0"
+days=$1
+
+for ((week=1251; week<=1774; week++)) 
+do {
+	for dow in $days
+	do {
+		yy=$(gps_date -wd $week $dow -o "%y")		
+		doy=$(gps_date -wd $week $dow -o "%j")
+		filenameNQ0=$(echo "ALR$yy$doy""0.NQ0.gz")
+		pathnameNQ0=$(echo "$S/RNX2SNX/20$yy/SOL/$filenameNQ0")
+		filenameSNX=$(echo "ALP$yy$doy""0.SNX.gz")
+		pathnameSNX=$(echo "$S/RNX2SNX/20$yy/SOL/$filenameSNX")
+		#cp $pathnameNQ0 .
+		#cp $pathnameSNX .
+		cp $pathnameNQ0 WD_"$dow"/.
+		cp $pathnameSNX WD_"$dow"/.
+	} done  
+} done

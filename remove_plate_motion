@@ -1,0 +1,73 @@
+#!/bin/bash
+# Remove plate motion (Eurasian) from ITRF velocities using Euler vector
+# Command:
+# 	./remove_plate_motion InputFile
+#
+# Output written to the standard output
+# Input / Output File format
+# "$SITEName    $X $Y $Z  $Vx  $Vy  $Vz "
+#
+# 
+# Alexandr Sokolov, KEG
+# 06.10.2016
+
+
+####### Euler pole parameters for Eurasia plate ##### 
+# (estimated from ALP_NET network, without Alp orogen, and refined set of  within 1 sdt):
+# lat  =  55.9533; [deg]
+# long = -97.4134; [deg]
+# w =  2.6364e-07; [deg/yr]
+
+filename=$1;
+
+while read line 
+do {
+	line=($line)
+	SITE_RADOM=${line[0]}
+	X=${line[1]}; # [m]
+	Y=${line[2]}; # [m]
+	Z=${line[3]}; # [m]
+	Vx=${line[4]}; # [m/yr]
+	Vy=${line[5]}; # [m/yr]
+	Vz=${line[6]}; # [m/yr] 
+
+	######## Transformation  (substracting the plate motion) ###########
+	# Euler pole of EURASIA plate (estimated from ALP_NET network):
+	#lat_pl=55.9533;      # [deg]
+	#long_pl=-97.4134;    # [deg]
+	#w_pl=0.26364*10^-06; # [deg/yr]
+	# more precise value
+	lat_pl=55.7892;      # [deg]
+	long_pl=-97.8099;    # [deg]
+	w_pl=0.2629*10^-06; # [deg/yr]
+	#echo "lat_pl  = $lat_pl  [deg]";
+	#echo "long_pl = $long_pl [deg]";
+	#echo "w_pl    = $w_pl    [deg/yr]";
+	lat_pl=$( echo " $lat_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
+	long_pl=$(echo "$long_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
+	w_pl=$(   echo "$w_pl    / 180 * 3.141592653589793" | bc -l);  # [rad/yr]
+
+	# Angular velocity vector [rad/yr, rad/yr, rad/yr]
+	w_pl_x=$( echo "$w_pl * c($lat_pl) * c($long_pl) " | bc -l );
+	w_pl_y=$( echo "$w_pl * c($lat_pl) * s($long_pl) " | bc -l );
+	w_pl_z=$( echo "$w_pl * s($lat_pl)              " | bc -l );
+	
+	# techtonit plate velocity at station:  V_pl = cross(W_pl,r), [m/yr m/yr m/yr]
+	V_pl_x=$(echo "        0     - $w_pl_z*$Y + $w_pl_y*$Z" | bc -l );
+	V_pl_y=$(echo "   $w_pl_z*$X +      0     - $w_pl_x*$Z" | bc -l );
+	V_pl_z=$(echo " - $w_pl_y*$X + $w_pl_x*$Y +      0    " | bc -l );
+	
+	# residual velocity at station # [m/yr m/yr m/yr]
+	V_res_x=$(echo "$Vx - $V_pl_x" | bc -l );
+	V_res_y=$(echo "$Vy - $V_pl_y" | bc -l );
+	V_res_z=$(echo "$Vz - $V_pl_z" | bc -l );
+
+	#echo "vel      : $Vx      $Vy     $Vz"
+	#echo "V_pl_xyz : $V_pl_x  $V_pl_y  $V_pl_z"
+	#echo "V_res_xyz: $V_res_x $V_res_y $V_res_z"
+	
+	echo "$SITE_RADOM $X $Y $Z $V_res_x $V_res_y $V_res_z" | awk '{printf"%-15s  %15.5f  %15.5f  %15.5f  %10.6f %10.6f %10.6f \n", $1, $2, $3, $4, $5, $6, $7}'
+} done < $filename
+
+
+

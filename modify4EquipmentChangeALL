@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# "Modify *.STA *.CRD *.VEL for equipment change in ALL sites by introdusing artificial stations" 
+# *.STA, *.CRD and *.VEL are overrided
+#
+# See: modify4EquipmentChange
+#
+# Autor: Alexandr Sokolov, KEG
+# 21.01.2016
+
+
+more  Station_list_uniq | awk '{printf" ./modify4EquipmentChange -ant %4s ALP_NET \n", $1}' | sh
+

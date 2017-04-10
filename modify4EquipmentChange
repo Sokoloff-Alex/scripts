@@ -1,0 +1,373 @@
+#!/bin/bash
+#
+# "Modify *.STA *.CRD *.VEL for equipment change in $SITE by introdusing artificial stations" 
+# *.STA, *.CRD and *.VEL are overrided
+#
+#  command:
+#   	./modify4EquipmentChange [-option] [site] [filaname (without extention)]
+#
+# IERS Domes Number is changed , by incrementing by 1 for each site equipment change
+# for example: 
+# "BRST 10004M004" changed to "BRST 10004M005"
+#
+# If IERS Domes Number is unknown and Marker name is used, then, additional character(s) added, incrementing by 1
+# for example:
+# "BIWI BIWI" changed to "BIWI BIWI1"
+# 
+# for counter of "artificial" site stay the same, but added 500 for easier identification of them
+#
+# options:
+#	-ant	# only Antenna / Radome changed
+#	-rec 	# only Receiver changed
+#
+#  	without option all changes taken into account
+#
+# example 
+# 	./modify4EquipmentChange -ant BRST ALP_NET               ### add artificial BRST stations if Antenna/Radome changes
+#
+#
+# Autor: Alexandr Sokolov, KEG
+# 21.01.2016
+
+
+if [[ "$1" == "-ant" ]] || [[ "$1" == "-rec" ]]
+then {
+	option=$1
+	SITE=$2
+	Network=$3
+} else {
+	option="all"
+	SITE=$1
+	Network=$2
+} fi
+
+echo "option:$option:"
+echo "SITE:$SITE:"
+echo "Network:$Network:"
+
+#read -p "Press [Enter] key to coninue..."
+echo "Modify *.STA *.CRD *.VEL for equipment change in $SITE by introdusing artificial stations" 
+
+
+STAfile="$Network.STA"
+CRDfile="$Network.CRD"
+VELfile="$Network.VEL"
+STAfileNew="$Network""New.STA"
+CRDfileNew="$Network""New.CRD"
+VELfileNew="$Network""New.VEL"
+
+################################ Update *.STA file ##########################################################
+# Extracting "TYPE 00X" Tables in separete files
+firstline=$(grep --line-number 'TYPE 001: RENAMING OF STATIONS' $STAfile | cut -f1 -d:)
+lastline=$( grep --line-number 'TYPE 002: STATION INFORMATION'  $STAfile | cut -f1 -d:)
+head -$((lastline - 3)) $STAfile | tail -n +$((firstline + 5)) > TableTYPE001
+
+firstline=$(grep --line-number 'TYPE 002: STATION INFORMATION' $STAfile | cut -f1 -d:)
+lastline=$( grep --line-number 'TYPE 003: HANDLING OF STATION PROBLEMS'  $STAfile | cut -f1 -d:)
+head -$((lastline - 3)) $STAfile | tail -n +$((firstline + 5)) > TableTYPE002
+
+firstline=$(grep --line-number 'TYPE 003: HANDLING OF STATION PROBLEMS' $STAfile | cut -f1 -d:)
+lastline=$( grep --line-number 'TYPE 004: STATION COORDINATES AND VELOCITIES (ADDNEQ)'  $STAfile | cut -f1 -d:)
+head -$((lastline - 3)) $STAfile | tail -n +$((firstline + 5)) > TableTYPE003
+
+firstline=$(grep --line-number 'TYPE 004: STATION COORDINATES AND VELOCITIES (ADDNEQ)' $STAfile | cut -f1 -d:)
+lastline=$( grep --line-number 'TYPE 005: HANDLING STATION TYPES'  $STAfile | cut -f1 -d:)
+head -$((lastline - 3)) $STAfile | tail -n +$((firstline + 5)) > TableTYPE004
+
+
+##### find number of equipment changes ##########
+
+grep "$SITE " TableTYPE002 | cut -c28-120 | uniq --skip-chars=42 | awk '{printf"%4s %2s %2s\n", $1, $2, $3}' | uniq > Receiver_changes	
+grep "$SITE " TableTYPE002 | cut -c28-202 | uniq --skip-chars=94 | awk '{printf"%4s %2s %2s\n", $1, $2, $3}' | uniq > Ant_Radom_changes
+
+if [[ $option == "-ant" ]] 
+then {
+	cat Ant_Radom_changes > Site_changes_new;
+	echo "only antenna change"
+} elif [[ $option == "-rec" ]] 
+then {
+	cat Receiver_changes > Site_changes_new;
+	echo "only receiver change"
+} else {
+	cat Ant_Radom_changes >  Site_changes_new
+	cat Receiver_changes  >> Site_changes_new
+} fi
+
+grep "$SITE " TableTYPE002 | tail -1 | cut --characters=49-58 >> Site_changes_new
+
+cat Site_changes_new | sort | uniq > Site_changes
+
+
+rm Receiver_changes
+rm Ant_Radom_changes
+rm Site_changes_new
+
+
+NumberOfChanges=$( wc -l  Site_changes | awk '{print $1}')
+NumberOfChanges=$((NumberOfChanges - 2))   ## in SiteChanges introduced first and last date of station 
+echo "NumberOfChanges : $NumberOfChanges"
+
+
+### Introduse new artificial stations if Equipment changes happend
+if [[ $NumberOfChanges > 0 ]]
+then {
+	######################## Update *.CRD file ############################################################
+	LineNumber=$(grep --line-number $SITE $CRDfile | cut -f1 -d:)	
+	Line=$(grep --max-count=1 $SITE $CRDfile)
+	Counter=$(echo "$Line" | cut --characters=1-3 )
+	Counter=$((Counter + 500))
+	SITE=$(echo "$Line" | cut --characters=6-9)
+	DOMESNumber=$(echo "$Line" | cut --characters=11-19)
+	X=$(echo "$Line" | cut --characters=23-36)
+	Y=$(echo "$Line" | cut --characters=38-51)
+	Z=$(echo "$Line" | cut --characters=53-66)
+	Flag=$(echo "$Line" | cut --characters=71-72)
+	head -$LineNumber $CRDfile > $CRDfileNew
+	LetterM=$(echo $DOMESNumber | cut --characters=6)
+	if [[ "$LetterM" = "M" ]] || [[ "$LetterM" = "S" ]]
+	then {
+		DOMESNumberHead=$(echo $DOMESNumber | cut --characters=1-6)
+		DOMESNumberTail=$(echo $DOMESNumber | cut --characters=7-9)
+		for ((i=1; i<=NumberOfChanges; i++))
+		do {
+			DOMESNumberTailNew=$( echo $DOMESNumberTail $i | awk '{print $1+$2}' )
+			DOMESNumberNew=$(printf "%6s%03d" $DOMESNumberHead $DOMESNumberTailNew)
+			printf "%3d  %4s %9s   %14s %14s %14s    %1s\n" $Counter $SITE $DOMESNumberNew $X $Y $Z $Flag	>> $CRDfileNew
+		} done	
+	} else {
+		DOMESNumber=$(echo $DOMESNumber | cut --characters=1-4)
+		for ((i=1; i<=NumberOfChanges; i++))
+		do {
+			DOMESNumberNew=$(printf "%4s%-d" $DOMESNumber $i)
+			printf "%3d  %4s %-9s   %14s %14s %14s    %1s\n" $Counter $SITE $DOMESNumberNew $X $Y $Z $Flag	>> $CRDfileNew
+		} done	
+	} fi
+	tail -n +$((LineNumber+1)) $CRDfile	>> $CRDfileNew
+	
+	#################################### Update *.VEL file ###################################
+	LineNumber=$(grep --line-number $SITE $VELfile | cut -f1 -d:)
+	Line=$(grep --max-count=1 $SITE $VELfile)
+	Counter=$(echo "$Line" | cut --characters=1-3 )
+	Counter=$((Counter + 500))
+	SITE=$(echo "$Line" | cut --characters=6-9)
+	DOMESNumber=$(echo "$Line" | cut --characters=11-19)
+	VX=$(echo "$Line" | cut --characters=23-36)
+	VY=$(echo "$Line" | cut --characters=38-51)
+	VZ=$(echo "$Line" | cut --characters=53-66)
+	Flag=$(echo "$Line" | cut --characters=71-72)
+	Plate=$(echo "$Line" | cut --characters=76-80)
+	head -$LineNumber $VELfile > $VELfileNew
+	LetterM=$(echo $DOMESNumber | cut --characters=6)
+	if [[ "$LetterM" = "M" ]] || [[ "$LetterM" = "S" ]]
+	then {
+		DOMESNumberHead=$(echo $DOMESNumber | cut --characters=1-6)
+		DOMESNumberTail=$(echo $DOMESNumber | cut --characters=7-9)
+		for ((i=1; i<=NumberOfChanges; i++))
+		do {
+			DOMESNumberTailNew=$( echo $DOMESNumberTail $i | awk '{print $1+$2}' )
+			DOMESNumberNew=$(printf "%6s%03d" $DOMESNumberHead $DOMESNumberTailNew)
+			printf "%3d  %4s %9s   %14s %14s %14s    %1s    %4s\n" $Counter $SITE $DOMESNumberNew $VX $VY $VZ $Flag $Plate	>> $VELfileNew
+		} done	
+	} else {
+		DOMESNumber=$(echo $DOMESNumber | cut --characters=1-4)
+		for ((i=1; i<=NumberOfChanges; i++))
+		do {
+			DOMESNumberNew=$(printf "%4s%-d" $DOMESNumber $i)
+			printf "%3d  %4s %-9s   %14s %14s %14s    %1s    %4s\n" $Counter $SITE $DOMESNumberNew $VX $VY $VZ $Flag $Plate	>> $VELfileNew
+		} done	
+	} fi
+	tail -n +$((LineNumber+1)) $VELfile	>> $VELfileNew
+
+	################### Generate additional data for Table in TYPE001 ###########################################
+	lineNumber=$(grep --line-number $SITE TableTYPE001 | cut -f1 -d:)
+	head -$((lineNumber - 1)) TableTYPE001 > TableTYPE001New
+	Remark=$(grep $SITE TableTYPE001 | cut  --characters=92-116 )
+	DOMESNumberOld=$DOMESNumber
+	for ((i=0; i<=NumberOfChanges; i++))
+	do {	
+		DateFisrt=$(head -$((i+1)) Site_changes | tail -1 | awk '{printf "%4s %2s %2s 00 00 00", $1, $2, $3}')
+		DateLast=$(head  -$((i+2)) Site_changes | tail -1 | awk '{printf "%4s %2s %2s 00 00 00", $1, $2, $3}')
+		DateLastMJD=$(gps_date -ymd $DateLast -o "%J")
+		DateLastMJD=$(echo "$DateLastMJD" | awk '{print $1-1}')
+		DateLast=$(gps_date -mjd $DateLastMJD -o "%Y %m %d 23 59 59")
+		LineDATE=$(echo "$DateFisrt  $DateLast")
+		LetterM=$(echo $DOMESNumber | cut --characters=6)
+		if [[ "$LetterM" = "M" ]] || [[ "$LetterM" = "S" ]]
+		then {
+			DOMESNumberHead=$(echo $DOMESNumber | cut --characters=1-6)
+			DOMESNumberTail=$(echo $DOMESNumber | cut --characters=7-9)
+			DOMESNumberTailNew=$( echo $DOMESNumberTail $i | awk '{print $1+$2}' )
+			DOMESNumberNew=$(printf "%6s%03d" $DOMESNumberHead $DOMESNumberTailNew)
+		} else {
+			DOMESNumber=$(echo $DOMESNumber | cut --characters=1-4)
+			if [[ "$i" > "0" ]]
+			then {
+				DOMESNumberNew=$(printf "%4s%-d" $DOMESNumber $i)
+			} else {
+				DOMESNumberNew=$(echo "$DOMESNumber" | cut --characters=1-4)
+			} fi
+		} fi
+		printf "%4s %-9s        001 %41s  %4s %-15s  %-24s\n" "$SITE" "$DOMESNumberNew" "$LineDATE" "$SITE" "$DOMESNumberOld" "$Remark" >> TableTYPE001New
+	} done
+
+	tail -n  +$((lineNumber + 1)) TableTYPE001 >> TableTYPE001New
+
+	############# Generate TYPE 003: HANDLING OF STATION PROBLEMS ############
+#
+#BRST 10004M004        001  1980 01 06 00 00 00  2003 06 09 23 59 59  BRST 10004M004        brst_20160223.log 
+#
+	cat TableTYPE003 | sort | uniq > TableTYPE003New
+
+	grep "$SITE" TableTYPE001New > SITE_Table001
+ 
+	while read line1 
+	do {
+		#echo "line1:$line1"
+		SITE_Dome=$(echo "$line1" | cut --characters=1-15)
+		YYYY_start=$(echo "$line1" | cut --characters=28-31)
+		MM_start=$(echo "$line1" | cut --characters=33-34)
+		DD_start=$(echo "$line1" | cut --characters=36-37)
+		hh_start=$(echo "$line1" | cut --characters=39-40)
+		mm_start=$(echo "$line1" | cut --characters=42-43)
+		ss_start=$(echo "$line1" | cut --characters=45-46)
+
+		#echo "$YYYY_start $MM_start $DD_start"
+		MJD_start=$(gps_date -ymd $YYYY_start $MM_start $DD_start -o "%J")
+	
+		YYYY_end=$(echo "$line1" | cut --characters=49-52)
+		MM_end=$(echo "$line1" | cut --characters=54-55)
+		DD_end=$(echo "$line1" | cut --characters=57-58)
+		hh_end=$(echo "$line1" | cut --characters=60-61)
+		mm_end=$(echo "$line1" | cut --characters=63-64)
+		ss_end=$(echo "$line1" | cut --characters=66-67)
+		#echo "$YYYY_end $MM_end $DD_end "
+		MJD_end=$(gps_date -ymd $YYYY_end $MM_end $DD_end -o "%J")
+		Duration=$(echo $MJD_start $MJD_end | awk '{print $2-$1}') 
+
+	# add into Table TYPE 003, if shorter than 2 years (365*2)
+		if (( "$Duration" < 730 )) ||  (( "$YYYY_end" <= 2005 )) || (( "$YYYY_start" >= 2015 )) 
+		then {
+			echo "$SITE_Dome       001  $YYYY_start $MM_start $DD_start $hh_start $mm_start $ss_start  $YYYY_end $MM_end $DD_end $hh_end $mm_end $ss_end  less than 2 years"  >> TableTYPE003New 
+		} fi
+
+	} done  < SITE_Table001
+	rm SITE_Table001
+
+	#cat TableTYPE003New | sort | uniq > TableTYPE003NewSorted
+	#mv TableTYPE003NewSorted  TableTYPE003New
+
+	############# Generate Additional data for table in TYPE004 (ADDNEQ) ###################
+	# Simplified, and clean
+	cat TableTYPE004 > TableTYPE004New
+	grep "$SITE" TableTYPE003New  | grep 'less than 2 years' | cut --characters=1-14 > exept
+	grep "$SITE" TableTYPE001New  | grep -v -f exept | cut --characters=1-14 > valid
+
+	SITE_Ref=$(head -1 valid)
+	tail -n +2 valid > others
+	while read line
+	do {
+		Site_Next=$line
+		#echo "$SITE_Ref        $Site_Next         1.00000   1.00000   1.00000   0.00001   0.00001   0.00001"	>> TableTYPE004New	
+		printf "%4s %-9s        %4s %-9s         %s\n"  $SITE_Ref        $Site_Next  "1.00000   1.00000   1.00000   0.00001   0.00001   0.00001" >> TableTYPE004New
+	} done < others
+
+	rm exept
+	rm valid
+	rm others
+	
+	###########################
+	##cat TableTYPE004 > TableTYPE004New
+	#DOMESNumberOld=$DOMESNumber
+	#LetterM=$(echo $DOMESNumber | cut --characters=6)
+	#for ((i=1; i<=NumberOfChanges; i++))
+	#do {
+	#	if [[ "$LetterM" = "M" ]] || [[ "$LetterM" = "S" ]]
+	#	then {
+	#		DOMESNumberHead=$(echo $DOMESNumber | cut --characters=1-6)
+	#		DOMESNumberTail=$(echo $DOMESNumber | cut --characters=7-9)
+	#		DOMESNumberTailNew=$( echo $DOMESNumberTail $i | awk '{print $1+$2}' )
+	#		DOMESNumberNew=$(printf "%6s%03d" $DOMESNumberHead $DOMESNumberTailNew)
+	#	} else {
+	#		DOMESNumber=$(echo $DOMESNumber | cut --characters=1-4)
+	#		if [[ "$i" > "0" ]]
+	#		then {
+	#			DOMESNumberNew=$(printf "%4s%-d" $DOMESNumber $i)
+	#		} else {
+	#			DOMESNumberNew=$(echo "$DOMESNumber" | cut --characters=1-4)
+	#		} fi
+	#	} fi
+	#	#printf "%4s %-9s        %4s %-9s         %s\n"  $SITE $DOMESNumberOld $SITE $DOMESNumberNew "1.00000   1.00000   1.00000   0.00001   0.00001   0.00001" >> TableTYPE004New
+	#	#DOMESNumberOld=$DOMESNumberNew # if commented the new stations are constrainted firth first time interval, otherwise, they are in chain
+	#} done	
+	#tail -n  +$lineNumber TableTYPE004 >> TableTYPE004New
+	#cat TableTYPE004New | sort | uniq > TableTYPE004NewSorted
+	#mv TableTYPE004NewSorted  TableTYPE004New
+
+	############### Stack all files into complete *.STA file ################################
+	head -11 $STAfile > $STAfileNew
+	cat TableTYPE001New >> $STAfileNew
+	echo "
+
+TYPE 002: STATION INFORMATION
+-----------------------------
+
+STATION NAME          FLG          FROM                   TO         RECEIVER TYPE         RECEIVER SERIAL NBR   REC #   ANTENNA TYPE          ANTENNA SERIAL NBR    ANT #    NORTH      EAST      UP      DESCRIPTION             REMARK
+****************      ***  YYYY MM DD HH MM SS  YYYY MM DD HH MM SS  ********************  ********************  ******  ********************  ********************  ******  ***.****  ***.****  ***.****  **********************  ************************" >> $STAfileNew
+	cat TableTYPE002 >> $STAfileNew
+	echo "
+
+TYPE 003: HANDLING OF STATION PROBLEMS
+--------------------------------------
+
+STATION NAME          FLG          FROM                   TO         REMARK
+****************      ***  YYYY MM DD HH MM SS  YYYY MM DD HH MM SS  ************************************************************" >> $STAfileNew
+	cat TableTYPE003New >> $STAfileNew
+	echo "
+
+TYPE 004: STATION COORDINATES AND VELOCITIES (ADDNEQ)
+-----------------------------------------------------
+                                            RELATIVE CONSTR. POSITION     RELATIVE CONSTR. VELOCITY
+STATION NAME 1        STATION NAME 2        NORTH     EAST      UP        NORTH     EAST      UP
+****************      ****************      **.*****  **.*****  **.*****  **.*****  **.*****  **.*****" >> $STAfileNew	
+	cat TableTYPE004New >> $STAfileNew
+	echo "
+
+TYPE 005: HANDLING STATION TYPES
+--------------------------------
+
+STATION NAME          FLG  FROM                 TO                   MARKER TYPE           REMARK
+****************      ***  YYYY MM DD HH MM SS  YYYY MM DD HH MM SS  ********************  ************************
+
+
+
+" >> $STAfileNew	
+
+	rm TableTYPE001New
+	rm TableTYPE003New
+	rm TableTYPE004New
+
+	mv $STAfileNew $STAfile
+	mv $CRDfileNew $CRDfile
+	mv $VELfileNew $VELfile
+
+} fi
+
+rm Site_changes
+rm TableTYPE001
+rm TableTYPE002
+rm TableTYPE003
+rm TableTYPE004
+
+
+#gedit $STAfile &
+#gedit $CRDfile &
+#gedit $VELfile &
+
+#echo "$STAfile ==> $STAfile"
+#echo "$CRDfile ==> $CRDfile"
+#echo "$VELfile ==> $VELfile"
+echo "Done"
+echo " "
+
+
+

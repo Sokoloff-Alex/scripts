@@ -1,0 +1,30 @@
+#!/bin/bash
+# make table  $SITE    $X  $Y  $Z    $vX  $vY  $vZ for ITRF 2 ETRF transformation at 
+# http://www.epncb.oma.be/_productsservices/coord_trans/index.php
+
+filename=$1
+
+tail -n +7 $filename.CRD | cut --characters=6-19| grep . | awk '{printf"%4s %-9s \n" , $1, $2}'   > Site_listNew
+
+
+while read SITE_DOME 
+do {
+	lineXYZ=$(grep -w "$SITE_DOME" $filename.CRD )
+	SITE=$(echo "$lineXYZ" | cut --characters=6-9)
+	DOMESNumber=$(echo "$lineXYZ" | cut --characters=11-19)
+	X=$(echo "$lineXYZ" | cut --characters=23-36)
+	Y=$(echo "$lineXYZ" | cut --characters=38-51)
+	Z=$(echo "$lineXYZ" | cut --characters=53-66)	
+	
+	LineVel_XYZ=$(grep -w "$SITE_DOME" $filename.VEL)
+	Vx=$(echo "$LineVel_XYZ" | cut --characters=23-36)
+	Vy=$(echo "$LineVel_XYZ" | cut --characters=38-51)
+	Vz=$(echo "$LineVel_XYZ" | cut --characters=53-66)
+
+	echo "$SITE$DOMESNumber    $X  $Y  $Z    $Vx  $Vy  $Vz"  # >> ITRF_CRD_VEL 
+	#printf "%4s%-10s  %15s %15s %15s  %15s  %15s  %15s \n" $SITE $DOMESNumber $X $Y $Z $Vx  $Vy  $Vz >> ITRF_CRD_VEL 
+
+} done < Site_listNew
+
+rm Site_listNew
+

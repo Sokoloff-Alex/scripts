@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Loading RINEX files, Orbits, Clock, ERP and DCB, between GPS week GPSWeekStart and GPSWeekEnd
+#
+# Script for population the DataPool $D with:
+# Loading RINEX files 			get_code2rnx   $GPSWeek
+# Loading Orbit, Clock and ERP		get_code2Data  $GPSWeek
+# Loading differential code biases	get_code2BSW52 $GPSWeek
+#
+# Example: import data between weaks 1251 and 1773
+# 	get_ALP_NET_week_all 1251 1773
+#
+# Example: import data only for week 1251
+#	get_ALP_NET_week_all 1251
+#
+# Alexandr Sokolov, KEG
+# 04.10.2015
+
+
+args=("$@")
+GPSWeekStart=${args[0]}
+GPSWeekEnd=${args[1]}
+
+if (( $# == 1))
+then
+	GPSWeekEnd=$GPSWeekStart
+fi
+
+echo "GPSWeekStart $GPSWeekStart"
+echo "GPSWeekEnd   $GPSWeekEnd"
+
+for(( GPSWeek=GPSWeekStart; GPSWeek<=$GPSWeekEnd; GPSWeek++ ))
+do {
+	echo "Loading GPS week $GPSWeek"
+	# Loading RINEX files
+	bash get_ALP_NET_rnx $GPSWeek
+
+
+	# Loadind Orbit, Clock and ERP
+	#bash get_code2Data $GPSWeek
+	#echo "Orbits, Clocks and Ephemeris are loaded"
+
+
+	# Loading  differential code biases
+	#bash get_code2BSW52 $GPSWeek
+	#echo "Differential-Code-Biases are loaded"
+
+	echo "Data for GPS-Week $GPSWeek are loaded"
+} done
+echo "Done"

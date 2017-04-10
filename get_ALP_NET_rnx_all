@@ -1,0 +1,131 @@
+#!/bin/bash
+#
+# Script for loading RINEX files into Bernese DataPool $D/RINEX/ for specified GPS-Week.
+# All nessesary RINEX files are specified in the body of scrip and splitted into networks.
+# Additionally, the source location must be specified, 
+# either fpt-address ($ftp_dir) and use load_Rinex_files_ftp  "$GPSWeek" "$ftp_dir"   "${SitesList[@]}"
+# or the directory ($PATH_DATA) and use load_Rinex_files_copy "$GPSWeek" "$PATH_DATA" "${SitesList[@]}"
+# 
+# Alexandr Sokolov, KEG
+# 04.10.2015
+
+GPSWeek=$1
+PATH_RNX="$D/RINEX/"      
+    
+######### Loading Methods ##########################################################################
+        
+function load_Rinex_files_ftp() {	
+	
+	GPSWeek="$1"
+	ftp_dir="$2"
+	Sites="$@"
+	cd $PATH_RNX   
+	pwd
+
+	wds="0 1 2 3 4 5 6"
+	for wd in $wds
+	do {
+		yr=$( ~/bin/gps_date -wd $GPSWeek $wd  -o "%Y") # YYYY
+		yr2=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%y") # yy
+		mo=$( ~/bin/gps_date -wd $GPSWeek $wd  -o "%m") # mm
+		day=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%d") # dd
+		doy=$(~/bin/gps_date -wd $GPSWeek $wd  -o "%j") # doy
+		tail=$doy"0."$yr2"d.Z"	
+		for site in $Sites
+		do {		
+			file_rnx=$site$tail
+			echo $ftp_dir/$yr/$doy/$file_rnx
+			wget -q -N $ftp_dir/$yr/$doy/$file_rnx
+		} done
+	} done
+}
+
+
+function load_Rinex_files_copy() {
+	
+	GPSWeek="$1"
+	PATH_DATA="$2"
+	Sites="$@"
+	PATH_RNX="$D/RINEX/" 
+
+	wds="0 1 2 3 4 5 6"
+	for wd in $wds 
+	do {
+		YR=$( ~/bin/gps_date -wd $1 $wd  -o "%Y")  # YYYY
+		yr=$( ~/bin/gps_date -wd $1 $wd  -o "%y")  # yy
+		doy=$(~/bin/gps_date -wd $1 $wd  -o "%j")  # doy
+		echo $YR $doy 
+	
+		for site in $Sites 
+		do { 
+			SITE=$(echo "${site^^}") # to Upper Case
+			file=$site$doy"0."$yr"d.Z"
+			FILE=$SITE$doy"0."$yr"d.Z"
+
+			if [ -f $PATH_DATA$YR/$doy/$file ]; then	
+				 #echo $PATH_DATA$YR/$doy/$file
+				 cp $PATH_DATA$YR/$doy/$file $PATH_RNX;
+			elif [ -f $PATH_DATA$YR/$doy/$FILE ]; then
+				 #echo $PATH_DATA$YR/$doy/$FILE
+				 cp $PATH_DATA$YR/$doy/$FILE $PATH_RNX;
+			fi	 
+		 } done
+	} done
+} 
+
+#################################### Loading Files #################################################
+
+# import RNX files for ALPEN 	AUSTRIA 	FREDNET 	  GREF  	RENAG       EPN and IGS networks
+# Number of sites:        23      	 24     	 16  	     9    	  105        22      13
+# Source of loading      BEK      	BEK   	   	BEK    BEK+ftp		  BEK	    ftp     ftp
+#
+# Total Number of sites: 212
+
+
+echo 'Loadind RINEX files for ALPEN network'
+PATH_DATA_ALPEN="/BEK149/GNSS_DATA/Alpen/"
+SitesList_Alpen="agne bosc brei carz deve elmo fahr fdos ferh ferr helm hgra hrie mave mbel mitt moca oato paro pogg pora sond wart"
+load_Rinex_files_copy "$GPSWeek" "$PATH_DATA_ALPEN" "${SitesList_Alpen[@]}"
+echo 'RINEX files for ALPEN networks loaded'
+
+echo 'Loadind RINEX files for AUSTRIA network'
+PATH_DATA_AUSTRIA="/BEK149/GNSS_DATA/Austria/"
+SitesList_AUSTRIA="	gmnd graz hfl2 hflk hkbl koe2 koet krbg ktz2 ktzb pat2 patk pfa2 pfan ried rohr sbg2 sbgz trf2 trfb vlch vlkm wels wien" # Load all
+load_Rinex_files_copy "$GPSWeek" "$PATH_DATA_AUSTRIA" "${SitesList_AUSTRIA[@]}"
+echo 'RINEX files for AUSTRIA networks loaded'
+
+echo 'Loadind RINEX files for FREDNET network'
+PATH_DATA_FREDNET="/BEK149/GNSS_DATA/FREDNET/"
+SitesList_FREDNET="acom afal canv codr fuse joan mdea mpra nove pazo suse trie udi1 udin varm zouf"
+load_Rinex_files_copy "$GPSWeek" "$PATH_DATA_FREDNET" "${SitesList_FREDNET[@]}"
+echo 'RINEX files for FREDNET networks loaded'
+
+echo 'Loadind RINEX files for RENAG network'
+PATH_DATA_RENAG="/BEK149/GNSS_DATA/RENAG/"
+SitesList_RENAG="agde aigl ajac alle alpe anno armi aubu aumo aven axpv bann bart baub biwi blix buan buis bure capa caze cham char chiz chmx chrn chtl clap clfd como cura entz eost erck esab esno fclz feno fjcp frac gina gras groi guil heau janu joux juvi laca laja lebe lfaz lroc luce luvi maks mans mars mich moda mogn mola molv mont mous mtpl nica nice ogag pali pard pign ploe poli pqrl puec puya puyv rabu rixh rosd rstl sapi sauv sete sima sjdv slvt soph sour stey stgr stj9 stmr tenc tlse tori tres troc trop vald vauc vigy wlbh"
+load_Rinex_files_copy "$GPSWeek" "$PATH_DATA_RENAG" "${SitesList_RENAG[@]}"
+echo 'RINEX files for RENAG networks loaded'
+
+echo 'Loadind RINEX files for GREF network'
+ftp_dir_GREF="ftp://igs.bkg.bund.de/GREF/obs"
+SitesList_GREF="dill erla goet hofj wt21"
+load_Rinex_files_ftp "$GPSWeek" "$ftp_dir_GREF" "${SitesList_GREF[@]}"                 
+echo 'RINEX files for GREF networks loaded'
+
+echo 'Loadind RINEX files for EUREF network'
+# 2 EUREF sites of GREF network + 22 EPN
+ftp_dir_EUREF="ftp://igs.bkg.bund.de/EUREF/obs"  
+SitesList_EUREF="dres karl autn bolg bscn came eglt gari gsr1 igmi linz mdor mlvl mops obe2 obe4 pore prat rove sprn ven1 vene vfch zada"
+load_Rinex_files_ftp "$GPSWeek" "$ftp_dir_EUREF" "${SitesList_EUREF[@]}"
+echo 'RINEX files for EUFER networks loaded'
+
+echo 'Loadind RINEX files for IGS network'
+# 2 EUREF sites of GREF network + 13 IGS"
+ftp_dir_IGS="ftp://igs.bkg.bund.de/IGS/obs" 
+SitesList_IGS="ffmj hueg brst bzrg geno gras ieng lroc medi pado pots tlse unpg zim2 zimm"
+load_Rinex_files_ftp "$GPSWeek" "$ftp_dir_IGS" "${SitesList_IGS[@]}"
+echo 'RINEX files for IGS networks loaded'
+
+echo "RINEX files for GPS_week $GPSWeek are loaded" 
+
+

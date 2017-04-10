@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Loading DCB from CODE for GPS-week into Bernese Datapool, $D/BSW52/
+#
+# Christof Voelksen, Alexandr Solokov, KEG
+# 21.09.2015
+
+PATH_BSW52="$D/BSW52/"     
+echo $PATH_BSW52
+break
+ftp_loc="ftp://ftp.unibe.ch/"
+
+
+cd $PATH_BSW52
+pwd
+
+head='COD'     
+tail='.ION.Z'
+#   
+#  DCB
+#  
+head_dcb_P1C1="P1C1"
+head_dcb_P1P2="P1P2"
+head_dcb_P2C2="P2C2"
+tail_dcb=".DCB.Z"
+tail_dcb_all="_ALL.DCB.Z"
+tail_dcb_rin="_RINEX.DCB.Z"
+#
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do
+{
+doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+week=`$HOME/bin/gps_date -wd $1 $wd  -o "%W"`
+mo=`$HOME/bin/gps_date -wd $1 $wd  -o "%m"`
+echo $yr $doy $wd $mo $week
+file=$head$week$wd$tail   
+echo $file
+#wget -nc ftp://$path/$yr/$head/$file
+ftp_dir="aiub/CODE/"$yr/
+echo $ftp_dir
+wget -N $ftp_loc$ftp_dir$file
+
+#
+#  DCB
+#
+d_file1=$head_dcb_P1C1$yr2$mo$tail_dcb
+d_file2=$head_dcb_P1P2$yr2$mo$tail_dcb_all
+d_file3=$head_dcb_P1P2$yr2$mo$tail_dcb      
+d_file4=$head_dcb_P2C2$yr2$mo$tail_dcb_rin      
+
+#echo $d_file1
+#echo $d_file2
+#echo $d_file3
+#echo $d_file4
+
+wget -N $ftp_loc$ftp_dir$d_file1
+wget -N $ftp_loc$ftp_dir$d_file2
+wget -N $ftp_loc$ftp_dir$d_file3
+wget -N $ftp_loc$ftp_dir$d_file4
+
+
+}
+done
+
+#
+#  DCB  
+#
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/P1C1.DCB             
+#wget -N ftp://ftp.unibe.ch/aiub/CODE/P1P2.DCB
+
+
+
+

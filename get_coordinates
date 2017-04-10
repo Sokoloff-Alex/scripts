@@ -1,0 +1,54 @@
+#!/bin/bash
+
+SITE=$1
+
+rm $1.CRD
+
+#grep $1 $S/RNX2SNX/20??/STA/F1_*  > q  # | grep '    A\|    W' > q
+grep $1 Results_F1_3/F1_040* | grep '    A\|    W' > q
+gedit q
+grep $1 ALP_NET.CRD
+X_0=$(grep $1 ALP_NET.CRD | awk '{print $4}')
+Y_0=$(grep $1 ALP_NET.CRD | awk '{print $5}')
+Z_0=$(grep $1 ALP_NET.CRD | awk '{print $6}')
+
+LOCAL GEODETIC DATUM: IGb08             EPOCH: 2004-01-02 12:00:00
+
+
+echo "Year	doy	YYYY-MM-DD		X,m             Y,m            Z,m           dX,mm    dY,mm    dZ,mm       N,mm     E,mm     U,mm" 
+#     2004	002	2004-01-02	 4630532.774690	  433946.284580	 4350142.730040	   20.31   -16.70    -9.17    -2.39     5.62    -0.80
+while read line 
+do {
+	
+	#year=$(echo $line | cut -c37-40)
+	#doy=$(echo  $line | cut -c51-53)
+
+	year=$(echo $line | cut -c17-18)
+	doy=$(echo  $line | cut -c19-21)
+	#echo $year $doy
+
+	ResudialsLine=$(grep $1 "Resudials_3/HLM$year$doy"0.OUT)
+	
+	year="20$year"
+
+	dd=`$HOME/bin/gps_date -yd $year $doy  -o "%d"`
+	mm=`$HOME/bin/gps_date -yd $year $doy  -o "%m"`
+	YYYY=`$HOME/bin/gps_date -yd $year $doy  -o "%Y"`
+
+	#CRD_line=$(($line))
+	#echo $CRD_line
+
+	#echo "$year $doy $YYYY $mm $dd $line $ResudialsLine"
+	echo "$year $doy $YYYY $mm $dd $line $X_0 $Y_0 $Z_0 $ResudialsLine" | awk '{printf("%4d\t%3s\t%4s-%2s-%2s\t%15.6f\t%15.6f\t%15.6f\t  %8.2f %8.2f %8.2f   %8.2f %8.2f %8.2f \n", $1, $2, $3,$4,$5, $9, $10, $11, ($9-$13)*1000, ($10-$14)*1000, ($11-$15)*1000, $25, $26, $27)}'
+	echo "$year $doy $YYYY $mm $dd $line $X_0 $Y_0 $Z_0 $ResudialsLine" | awk '{printf("%4d\t%3s\t%4s-%2s-%2s\t%15.6f\t%15.6f\t%15.6f\t  %8.2f %8.2f %8.2f   %8.2f %8.2f %8.2f \n", $1, $2, $3,$4,$5, $9, $10, $11, ($9-$13)*1000, ($10-$14)*1000, ($11-$15)*1000, $25, $26, $27)}'  >> $1.CRD
+
+#	echo "$year $doy $YYYY $mm $dd $line" | awk '{printf("%4d\t%3s\t%4s-%2s-%2s\t%15.6f\t%15.6f\t%15.6f \n", $1, $2, $3,$4,$5, $10, $11, $12)}' >> $1.CRD
+	
+} done < q 
+rm q
+
+gedit $1.CRD &
+
+#/VENUS/GPSDATA/ALPEN/SAVEDISK/RNX2SNX/2004/STA/F1_043630.CRD: 54  BRST 10004M004    4231162.57569  -332746.68161  4745130.92630    A
+#Results_F1/F1_040010.CRD:372  SIMA SIMA         4400833.95805   417279.48804  4582828.21236
+

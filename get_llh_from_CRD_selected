@@ -1,0 +1,41 @@
+#!/bin/bash
+echo 'converting XYZ to LLH for selected sites'
+
+Networks='ALPEN AUSTRIA FREDNET RENAG'
+for Network in $Networks
+do
+echo '#'$Network > $Network.selected.d
+echo "Marker       X               Y                 Z        Latitude        Longidude       Height" 
+counter=0
+while read line 
+do
+	counter=$((counter + 1))
+	if (( counter > 8))
+	then
+		line=( $line )
+		marker=${line[0]}
+		#echo $marker
+		#grep -i -m 1 $marker $Network.CRD
+		coordline=$(grep -i -m 1 $marker $Network.CRD)
+		coordline=( $coordline )
+		#echo $coordline
+		MARKER=${coordline[1]}
+		X=${coordline[3]}
+		Y=${coordline[4]}
+		Z=${coordline[5]} 
+		#echo "$MARKER	$X		$Y	$Z"
+		Latitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A" )
+		Longitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%L" )
+		Height=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%h" )
+		if [ $(bc <<< "$Longitude <= 180") -eq 0 ]
+		then
+			Longitude=`echo $Longitude -360 |bc`
+		fi
+		echo "$MARKER	$X	$Y	$Z	$Latitude	$Longitude	$Height"
+	#	       Longitude,        $Latitude size, angle, fontno, justify, MARKER
+		echo "$Longitude        $Latitude	10 0 1 5        $MARKER" >> $Network.selected.d
+	fi
+	done < $Network.Table_selected.txt
+echo $((counter - 8 -1))
+done
+echo 'done'

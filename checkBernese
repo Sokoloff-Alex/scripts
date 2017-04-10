@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#lineXYZ=$(grep $SITE $filename.CRD)
+lineXYZ="  1  ACOM 12767M001 4273810.67948  1027226.71772  4608635.03802"
+	lineXYZ=($lineXYZ)
+	SITE=${lineXYZ[1]}
+	X=${lineXYZ[3]}
+	Y=${lineXYZ[4]}
+	Z=${lineXYZ[5]} 
+	#echo "$SITE $X		$Y		$Z"
+	Latitude=$(  ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A" )
+	Longitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%L" )
+	Height=$(    ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%h" )
+#	lineVel_XYZ=$(grep $SITE $filename.VEL)
+	lineVel_XYZ="  1  ACOM 12767M001 -0.01570   0.01810   0.01190"
+	lineVel_XYZ=($lineVel_XYZ)	
+	vX=${lineVel_XYZ[3]}
+	vY=${lineVel_XYZ[4]}
+	vZ=${lineVel_XYZ[5]} 
+
+	echo "$SITE $X $Y $Z $vX $vY $vZ"
+
+# check XYZ2NEU transformation
+## Crude transformation
+	#################### Transformation XYZ => ENU ######################################
+	# http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
+	
+	Long=$(echo $Longitude | awk '{print $1/180*3.14159}')  # Lambda
+	Lat=$( echo $Latitude  | awk '{print $1/180*3.14159}')  # Phi
+	#echo "$Longitude $Long  $Latitude $Lat"
+
+	vE=$(echo "$vX $vY $vZ $Long $Lat" | awk '{print -sin($4)*$1         + cos($4)*$2         +    0      }')
+	vN=$(echo "$vX $vY $vZ $Long $Lat" | awk '{print -cos($4)*sin($5)*$1 - sin($4)*sin($5)*$2 + cos($5)*$3}')
+	vU=$(echo "$vX $vY $vZ $Long $Lat" | awk '{print  cos($4)*cos($5)*$1 + sin($4)*cos($5)*$2 + sin($5)*$3}')
+	echo "Velocities ENU"
+	echo "$SITE $X $Y $Z $vX $vY $vZ $vE $vN $vU"
+	#echo "$SITE $vX $vY $vZ  $vX_E $vY_E $vZ_E $vE $vN $vU" | awk '{printf"%4s  %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f \n", $1, $2, $3, $4, $5, $6, $7, $8, $8, $10}'
+	#####################################################################################
+
+
+
+	
+
+	######## Transformation from ITRF to ETRF  (substracting the plate motion)###########
+	# (c) compute velocity from ITRF2008 to ETRF2000
+	# From table 5 # http://etrs89.ensg.ign.fr/memo-V8.pdf
+	Rdot1=0.081 
+	Rdot2=0.490 
+	Rdot3=-0.792	
+	# conv mas/y -> [rad/yr], 1 [mas] = 4.8481368 * 10E-9  [rad]
+	Rdot1=$(echo "$Rdot1*0.0000000048481368" | bc) # rad/yr
+	Rdot2=$(echo "$Rdot2*0.0000000048481368" | bc) # rad/yr
+	Rdot3=$(echo "$Rdot3*0.0000000048481368" | bc) # rad/yr
+	
+	vX_E=$(echo "$vX +     0     - $Rdot3*$Y + $Rdot2*$Z" | bc )
+	vY_E=$(echo "$vY + $Rdot3*$X +     0     - $Rdot1*$Z" | bc )
+	vZ_E=$(echo "$vZ - $Rdot2*$X + $Rdot1*$Y +     0    " | bc )
+
+	# checked with http://www.epncb.oma.be/_productsservices/coord_trans/
+	
+
+	## Crude transformation
+	#################### Transformation XYZ => ENU ######################################
+	# http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
+	
+	Long=$(echo $Longitude | awk '{print $1/180*3.14159}')  # Lambda
+	Lat=$( echo $Latitude  | awk '{print $1/180*3.14159}')  # Phi
+	#echo "$Longitude $Long  $Latitude $Lat"
+
+	vE=$(echo "$vX_E $vY_E $vZ_E $Long $Lat" | awk '{print -sin($4)*$1         + cos($4)*$2         +    0      }')
+	vN=$(echo "$vX_E $vY_E $vZ_E $Long $Lat" | awk '{print -cos($4)*sin($5)*$1 - sin($4)*sin($5)*$2 + cos($5)*$3}')
+	vU=$(echo "$vX_E $vY_E $vZ_E $Long $Lat" | awk '{print  cos($4)*cos($5)*$1 + sin($4)*cos($5)*$2 + sin($5)*$3}')
+
+	#echo "$SITE $vX $vY $vZ  $vX_E $vY_E $vZ_E $vE $vN $vU" | awk '{printf"%4s  %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f \n", $1, $2, $3, $4, $5, $6, $7, $8, $8, $10}'
+	#####################################################################################
+
+
+
+	
+
+
+	#echo "$Longitude $Latitude $vE $vN $SITE" | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'
+	echo "$Longitude $Latitude $vE $vN $SITE" | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  
+	echo "$Longitude $Latitude     $vU $SITE" | awk '{printf"%-12.6f  %12.6f     0.0000    %10.6f      %4s \n", $1, $2, $3, $4}'   
+	
+
+

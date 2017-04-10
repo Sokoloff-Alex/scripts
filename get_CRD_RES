@@ -1,0 +1,53 @@
+#!/bin/bash
+# make table  $SITE$X  $Y  $Z  $N  $E  $U for for plotting residuals on map 
+
+
+filenameCRD=$1
+filenameResiduals=$2
+
+tail -n +7 $filenameCRD | cut --characters=6-19| grep . | awk '{printf"%4s %-9s \n" , $1, $2}'   > Site_listNew
+
+
+
+while read SITE_DOME 
+do {
+	lineXYZ=$(grep -w "$SITE_DOME" $filenameCRD )
+	SITE=$(echo "$lineXYZ" | cut --characters=6-9)
+	DOMESNumber=$(echo "$lineXYZ" | cut --characters=11-19)
+	X=$(echo "$lineXYZ" | cut --characters=23-36)
+	Y=$(echo "$lineXYZ" | cut --characters=38-51)
+	Z=$(echo "$lineXYZ" | cut --characters=53-66)	
+	
+	LineResidulas=$(grep -w "$SITE_DOME" $filenameResiduals)
+	N=$(echo "$LineResidulas" | cut --characters=37-45)
+	E=$(echo "$LineResidulas" | cut --characters=47-55)
+	U=$(echo "$LineResidulas" | cut --characters=57-65)
+	
+	# Transformation to LLH
+	Latitude=$(  ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A" )
+	Longitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%L" )
+	Height=$(    ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%h" )
+
+	Long=$(echo $Longitude | awk '{print $1/180*3.14159}')  # Lambda
+	Lat=$( echo $Latitude  | awk '{print $1/180*3.14159}')  # Phi
+	#echo "$Longitude $Long  $Latitude $Lat"
+
+	#echo "$SITE$DOMESNumber    $X  $Y  $Z    $N  $E  $U"  # >> 
+	#printf "%4s%-10s  %15s %15s %15s  %15s  %15s  %15s \n" $SITE $DOMESNumber $$X  $Y  $Z    $dN  $dE  $dU >> CRD_residuals 
+
+	#echo "$Longitude $Latitude $E $N $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'
+	echo "$Longitude $Latitude $E $N $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> Residuals_field_horizontal.txt
+	echo "$Longitude $Latitude  0 $U $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> Residuals_field_vertical.txt
+
+} done < Site_listNew
+
+more Residuals_field_vertical.txt | awk '{if ($4>0)  printf"%-12.6f   %12.6f   %10.5f   %10.5f      %4s \n", $1, $2, $3, $4, $5}' > Residuals_field_vertical_Uplift.txt
+more Residuals_field_vertical.txt | awk '{if ($4<=0) printf"%-12.6f   %12.6f   %10.5f   %10.5f      %4s \n", $1, $2, $3, $4, $5}' > Residuals_field_vertical_subduction.txt
+
+echo "Residuals in NEU for LLH are prepared"
+echo "file Residuals_field_horizontal.txt is prepared" 
+echo "file Residuals_field_vertical.txt is prepared"
+echo "Done"
+
+rm Site_listNew
+

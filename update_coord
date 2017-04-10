@@ -1,0 +1,37 @@
+#!/bin/bash
+# update A priory coordinates from Estmated Coordinates
+
+Network='ALPEN'
+sites="agne aubu baso bosc brei buan carz cham cltn deve elmo eost fahr fdos ferh ferr helm hgra hrie janu lago lebe lfaz luce maks mark mave mbel mitt moca oato paro pogg pora prov puya rosd serl sond wart" # all Alpen sites, 40 sites
+
+echo 'update A priory coordinates from Estmated Coordinates for Network ' $Network
+
+Estimated_Coordinates_File=$(ls F1* | tail -1)
+Network_Coordinates_File=$Network.CDR
+
+for site in $sites
+do
+
+grep -i $site $Estimated_Coordinates_File >$Network_Coordinates_File
+done
+echo 'done'
+
+#while read lineOLD
+#do
+#lineOLD=( $lineOLD )
+#CounterOLD=${lineOLD[0]}
+#MarkerApriory=${lineOLD[1,2]}
+#Flag=${lineOLD[6]}
+#
+#	while read lineNEW
+#	do
+#	lineNEW=( $lineNEW )	
+#	MarkerEstimated=${lineNEW[1,2]}
+#	
+#	X_Estimated=${lineNEW[3]}
+#	Y_Estimated=${lineNEW[4]}
+#	Z_Estimated=${lineNEW[5]}
+#	done < $Estimated_Coordinates_File
+#
+#done < $Network_Coordinates_File
+

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo 'Adding RMS outliers to .STA file'
+
+
+inputFile=$P/ALP_NET/OUT/"$1"
+
+#Type2LineStart=$(grep --line-number 'TYPE 003: HANDLING OF STATION PROBLEMS' ALP_NET.STA | awk '{printf"%-10d \n", $1}')
+#Type2LineStart=$((Type2LineStart+5))
+#Type2LineEnd=$(grep  --line-number 'TYPE 004: STATION COORDINATES AND VELOCITIES (ADDNEQ)' ALP_NET.STA | awk '{printf"%-10d \n", $1}')
+#Type2LineEnd=$((Type2LineEnd-3))
+#Type2length=$((Type2LineEnd-Type2LineStart))
+
+#tail -n +$Type2LineStart ALP_NET.STA | head -$Type2length > old_outliers
+
+
+StartLineOfOutliers=$(grep --line-number 'Notification of detected outliers' $inputFile  | awk '{printf"%-10d \n", $1}')
+tail -n +$StartLineOfOutliers $inputFile > Outliers_notification
+
+StartLineOfOutliersRMS=$(grep --line-number 'Root-mean-square errors exceeding specified threshold' Outliers_notification | awk '{printf"%-10d \n", $1}') 
+len=$((StartLineOfOutliersRMS-11))
+
+tail -n +9 Outliers_notification | head -$len | awk '{if ($5>100 || $5<-100) print  }' > Outliers_table1
+tail -n +$((StartLineOfOutliersRMS+5)) Outliers_notification  | head --lines=-6 > Outliers_table2
+
+more Outliers_table1 | awk '{printf"%4s %-10s       001  %s %s  %s %s  %s %8.2f mm \n", $1, $2, $6, $7, $8, $9, $4, $5}' >> old_outliers
+more Outliers_table2 | awk '{printf"%4s %-10s       001  %s %s  %s %s  %s %8.2f mm \n", $1, $2, $5, $6, $7, $8, $3, $4}' >> old_outliers
+
+sort old_outliers | uniq > new_outliers
+
+rm Outliers_table1
+rm Outliers_table2
+rm old_outliers
+
+echo 'Done'
+
+gedit new_outliers
+
+

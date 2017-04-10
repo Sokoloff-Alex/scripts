@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# make separate coordinate files for each Cluster
+
+NumberOfClusters=10
+
+rm ALP_NET_Cluster* 
+
+for ((ClusterNumber=1; ClusterNumber<=$NumberOfClusters; ClusterNumber++))
+do 	
+	#echo "Cluster $ClusterNumber"
+	grep " $ClusterNumber " ALP_NET.CLU | awk '{printf "%4s\n", $1}' > list
+	grep -f list ALP_NET.CRD > Cluster.CRD
+	while read line 
+	do
+		line=( $line )
+		marker=${line[1]}
+		X=${line[3]}
+		Y=${line[4]}
+		Z=${line[5]} 
+		#echo "$marker	$X		$Y	$Z"
+		Latitude=$(  ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A" )
+		Longitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%L" )
+		Height=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%h" )
+		if [ $(bc <<< "$Longitude <= 180") -eq 0 ]
+		then
+			Longitude=`echo $Longitude -360 |bc`
+		fi
+		#echo "$marker	$X	$Y	$Z	$Latitude	$Longitude	$Height"
+		echo "$Longitude        $Latitude        $marker" >> ALP_NET_Cluster_$ClusterNumber.d
+	done < Cluster.CRD	
+	#echo '==================================================================================================='
+rm list
+rm Cluster.CRD		
+done
+
+echo 'Done'

@@ -1,0 +1,31 @@
+#!/bin/bash
+echo 'converting XYZ to LLH'
+
+Network='ALPEN'
+counter=0
+echo '#'$Network > $Network.d
+echo "Marker       X               Y                 Z        Latitude        Longidude       Height" 
+while read line 
+do
+counter=$((counter + 1))
+if (( counter > 6))
+then
+	line=( $line )
+	marker=${line[1]}
+	X=${line[3]}
+	Y=${line[4]}
+	Z=${line[5]} 
+	#echo "$marker	$X		$Y	$Z"
+	Latitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A" )
+	Longitude=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%L" )
+	Height=$( ../bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%h" )
+	if [ $(bc <<< "$Longitude <= 180") -eq 0 ]
+	then
+		Longitude=`echo $Longitude -360 |bc`
+
+	fi
+	echo "$marker	$X	$Y	$Z	$Latitude	$Longitude	$Height"
+	echo "$Longitude        $Latitude        $marker" >> $Network.d
+fi
+done < $Network.CRD
+echo 'done'

@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# Transform Velocities for Vx Vy Vz-> Ve Vn Vu
+# and prepare Velocity field files for 
+# hirozontal an vertical components
+
+filename=$1 # use result of ITRF_CRD_VEL or ETRF_CRD_VEL file, processed at 
+#http://www.epncb.oma.be/_productsservices/coord_trans/index.php
+
+
+#echo "Long, [deg]     Lat, [deg]   VelE,[m/yr]  VelN,[m/yr]   Marker"
+echo "Long, [deg]     Lat, [deg]   VelE,[m/yr]  VelN,[m/yr]   Marker"  > Velocity_field_horizontal.txt
+echo "Long, [deg]     Lat, [deg]   VelE,[m/yr]  VelN,[m/yr]   Marker"  > Velocity_field_vertical.txt
+#     13.514899        46.547935     0.0000      0.011910      ACOM
+
+while read line
+do {
+	line=($line)
+	SITE=${line[0]}	
+	X=${line[1]}
+	Y=${line[2]}
+	Z=${line[3]} 
+	Vx=${line[4]}
+	Vy=${line[5]}
+	Vz=${line[6]} 
+
+	LLH=$(poscvt --ecef="$X $Y $Z" --output-format="%A %L %h" )
+	Latitude=$( echo "$LLH" |  cut -f1 -d" ")
+	Longitude=$(echo "$LLH" |  cut -f2 -d" ")
+	Height=$(   echo "$LLH" |  cut -f3 -d" ")
+	
+	#echo "$SITE    $X  $Y  $Z    $Vx  $Vy  $Vz" 
+
+	## Crude transformation !!!
+
+	#################### Transformation XYZ => ENU ######################################
+	# http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
+	
+	Long=$(echo $Longitude | awk '{print $1/180*3.14159}')  # Lambda
+	Lat=$( echo $Latitude  | awk '{print $1/180*3.14159}')  # Phi
+	#echo "$Longitude $Long  $Latitude $Lat"
+
+	Ve=$(echo "$Vx $Vy $Vz $Long $Lat" | awk '{print -sin($4)*$1         + cos($4)*$2         +    0      }')
+	Vn=$(echo "$Vx $Vy $Vz $Long $Lat" | awk '{print -cos($4)*sin($5)*$1 - sin($4)*sin($5)*$2 + cos($5)*$3}')
+	Vu=$(echo "$Vx $Vy $Vz $Long $Lat" | awk '{print  cos($4)*cos($5)*$1 + sin($4)*cos($5)*$2 + sin($5)*$3}')
+
+	#echo "$Ve $Vn $Vu"
+
+	#####################################################################################
+
+
+	#echo "$Longitude $Latitude $Ve $Vn $SITE" | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'
+	echo "$Longitude $Latitude $Ve $Vn $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> Velocity_field_horizontal.txt
+	echo "$Longitude $Latitude  0  $Vu $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> Velocity_field_vertical.txt
+	
+
+} done < $filename
+
+more Velocity_field_vertical.txt | awk '{if ($4>0)  printf"%-12.6f   %12.6f   %10.5f   %10.5f      %4s \n", $1, $2, $3, $4, $5}' > Velocity_field_vertical_Uplift.txt
+more Velocity_field_vertical.txt | awk '{if ($4<=0) printf"%-12.6f   %12.6f   %10.5f   %10.5f      %4s \n", $1, $2, $3, $4, $5}' > Velocity_field_vertical_subduction.txt
+
+echo "file Velocity_field_horizontal.txt is prepared" 
+echo "file Velocity_field_vertical.txt is prepared"
+echo "Done"

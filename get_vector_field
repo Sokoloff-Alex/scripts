@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# Prepare Velocity field files (Lat Long Ve Vn) for GMT psvelo
+# Transform coordinates from ITRF2008 (at epoch 2005) into ETRF2000 (at epoch 2005) (optional)
+# Transform XYZ into NEU
+#
+# Command:
+# 	./get_vector_field InputFileName (-option)
+#
+#	InputFileName - filname without extention (example: ALP_NET for ALP_NET.CRD and ALP_NET.VEL files)
+#
+# Options 
+#	-e 	perform transformation ITRF to ETRF, see ITRF2ETRF Script
+# 
+# By default output written into 4 files see transform XYZ2ENU Script: 
+# 	Velocity_field_horizontal.txt
+#	Velocity_field_vertical.txt
+#	Velocity_field_vertical_Uplift.txt
+#	Velocity_field_vertical_subduction.txt
+# 
+# Alexandr Sokolov, KEG
+# 07.03.2016
+
+echo 'Preparing Velocity field in ENU'
+
+filename=$1
+flag=$2
+
+paste $filename.CRD $filename.VEL | tail -n +7 | grep -v '        EURA' | grep ' EURA' | awk '{printf"%4s%9-s %15.5f %15.5f %15.5f %10.5f %10.5f %10.5f \n", $2, $3, $4, $5, $6, $11, $12, $13 }'  > ITRF_CRD_VEL
+
+if [[ $flag == "-e" ]] # in transform ITRF -> ETRF
+then
+	# get central epoch and convert format from yyyy-mm-dd to yyyy.yy (where .yy is the fraction of the year)
+	#Tc=2010; # Epoch of coordinates 
+	Epoch=$(sed -n 3p $filename.CRD | cut --characters=48-57)
+	Tc=$(gps_date -ymd $Epoch -o "%Y %j" | awk '{printf "%4d %02d",$1, $2/3.65}' | awk '{ if ($2 ==100 ) printf "%4.02f", $1+1 ; else printf "%4d.%02d", $1, $2;}')
+	echo "... Central Epoch: $Epoch --> $Tc"
+	echo "... transforming ITFR2008 ( $Tc ) -> ETRF2000 ( 2000.00 )"
+	ITRF2ETRF ITRF_CRD_VEL "$Tc"   > ETRF_CRD_VEL
+	echo "... transforming XYZ -> ENU"
+	transform_XYZ2ENU ETRF_CRD_VEL
+	echo "ETRF" > Velocity_field_info.txt
+else
+	echo "... transforming XYZ -> ENU"
+	transform_XYZ2ENU ITRF_CRD_VEL
+	echo "ITRF" > Velocity_field_info.txt
+fi
+
+
+#gedit Velocity_field_* &
+

@@ -1,0 +1,261 @@
+#!/bin/bash
+# import RNX files for ALPEN, AUSTRIA, FREDNET, GREF and RENAG networks
+# Number of sites:        23       24       16             105     
+#
+# Total Number of sites: 
+
+PATH_RNX="$D/RINEX/" 
+
+###############################################
+
+echo 'Loadind RINEX files for ALPEN network'
+
+PATH_DATA="/BEK149/GNSS_DATA/Alpen/"
+
+# List of Alpen site covering observation period <2 years and without duplicates from RENAG
+# among duplicates sites, RENAG network contains more files than in ALPEN network,
+# In Alpen network only AUBU has additional 28 uniqe files (but contains test measurements)
+#                   and LFAZ has additional 10 sites (skipped) ,since LFAZ in RENAG contains 2414 files
+# 
+# Total 23 sites
+
+SitesList="agne bosc brei carz deve elmo fahr fdos ferh ferr helm hgra hrie mave mbel mitt moca oato paro pogg pora sond wart"
+echo $SitesList
+echo 'Starting'
+
+wds="0 1 2 3 4 5 6"
+for wd in $wds 
+do 
+	 YR=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`  # YYYY
+	 yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`  # yy
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`  # doy
+	echo $YR $yr $mo $day $doy 
+	
+	for site in $SitesList 
+	do
+	 
+		SITE=$(echo "${site^^}") #to Upper Case
+		
+		file=$site$doy"0."$yr"d.Z"
+		FILE=$SITE$doy"0."$yr"d.Z"
+		#echo $file
+		#echo $FILE
+
+		if [ -f $PATH_DATA$YR/$doy/$file ]; then	
+			 #echo $PATH_DATA$YR/$doy/$file
+			 cp $PATH_DATA$YR/$doy/$file $PATH_RNX;
+
+		elif [ -f $PATH_DATA$YR/$doy/$FILE ]; then
+			 #echo $PATH_DATA$YR/$doy/$FILE
+			 cp $PATH_DATA$YR/$doy/$FILE $PATH_RNX;
+		fi	 
+	 done
+done
+
+echo 'RINEX files for ALPEN networks loaded'
+
+###############################################
+
+echo 'Loadind RINEX files for AUSTRIA network'
+
+PATH_DATA="/BEK149/GNSS_DATA/Austria/"
+#  Create  File names
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do {
+	yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+	yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+	echo $yr $yr2 $mo $day $doy 
+
+	file="????"$doy"0."$yr2"d.Z"
+
+	#echo "$file\n";
+	cp $PATH_DATA$yr/$doy/$file $PATH_RNX
+}
+done
+
+echo 'RINEX files for AUSTRIA networks loaded'
+
+###############################################
+
+echo 'Loadind RINEX files for FREDNET network'
+
+PATH_DATA="/BEK149/GNSS_DATA/FREDNET/"
+#  Create  File names
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do {
+	yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+	yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+	echo $yr $yr2 $mo $day $doy 
+
+	file="????"$doy"0."$yr2"d.Z"
+
+	echo "$file\n";
+	cp $PATH_DATA$yr/$doy/$file $PATH_RNX
+}
+done
+
+echo 'RINEX files for FREDNET networks loaded'
+
+###############################################
+
+echo 'Loadind RENAG files for RENAG network'
+
+PATH_DATA="/BEK149/GNSS_DATA/RENAG/"
+
+# List of RENAG site covering observation period <2 years 
+# Total: 104 sites
+SitesList="agde aigl ajac alle alpe anno armi aubu aumo aven axpv bann bart baub biwi blix buan buis bure capa caze cham char chiz chmx chrn chtl clap clfd como cura entz eost erck esab esno fclz feno fjcp frac gina gras groi guil heau janu joux juvi laca laja lebe lfaz lroc luce luvi maks mans mars mich moda mogn mola molv mont mous mtpl nica nice ogag pali pard pign ploe poli pqrl puec puya puyv rabu rixh rosd rstl sapi sauv sete sima sjdv slvt soph sour stey stgr stj9 stmr tenc tlse tori tres troc trop vald vauc vigy wlbh"
+
+echo $SitesList
+echo 'Starting'
+
+wds="0 1 2 3 4 5 6"
+for wd in $wds 
+do 
+	 YR=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`  # YYYY
+	 yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`  # yy
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`  # doy
+	echo $YR $yr $mo $day $doy 
+	
+	for site in $SitesList 
+	do
+	 
+		SITE=$(echo "${site^^}") #to Upper Case
+		
+		file=$site$doy"0."$yr"d.Z"
+		FILE=$SITE$doy"0."$yr"d.Z"
+		#echo $file
+		#echo $FILE
+
+		if [ -f $PATH_DATA$YR/$doy/$file ]; then	
+			 #echo $PATH_DATA$YR/$doy/$file
+			 cp $PATH_DATA$YR/$doy/$file $PATH_RNX;
+
+		elif [ -f $PATH_DATA$YR/$doy/$FILE ]; then
+			 #echo $PATH_DATA$YR/$doy/$FILE
+			 cp $PATH_DATA$YR/$doy/$FILE $PATH_RNX;
+		fi	 
+	 done
+done
+
+echo 'RINEX files for RENAG networks loaded'
+
+###############################################
+
+echo 'Loadind RINEX files for GREF network'
+
+# GREF sites
+sites="dill erla goet hofj wt21"
+ftp_loc="ftp://igs.bkg.bund.de/"
+ftp_dir="GREF/obs/"                  
+
+#wget -N $http_loc$http_dir/$yr/$file_18
+#ftp://igs.bkg.bund.de/GREF/obs/
+#http_dir="DELAY/GRID/VMFG_FC/"
+
+cd $PATH_RNX   
+pwd
+
+
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do
+{
+	yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+	yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+	mo=`$HOME/bin/gps_date -wd $1 $wd  -o "%m"`
+	day=`$HOME/bin/gps_date -wd $1 $wd  -o "%d"`
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+	echo $yr $yr2 $mo $day $doy 
+	tail=$doy"0."$yr2"d.Z"
+
+	for site in $sites
+	{
+		file_rnx=$site$tail
+		echo $file_rnx
+		wget -N $ftp_loc$ftp_dir/$yr/$doy/$file_rnx
+	}
+}
+done
+
+# EUREF sites of GREF network + 23 EPN
+sites="dres karl autn bolg bscn came eglt gari gsr1 igmi linz mdor mlvl mops obe2 obe4 pore prat rove sprn ven1 vene vfch zada"
+ftp_dir="EUREF/obs/"                  
+
+#wget -N $http_loc$http_dir/$yr/$file_18
+#ftp://igs.bkg.bund.de/EUREF/obs/
+#http_dir="DELAY/GRID/VMFG_FC/"
+
+cd $PATH_RNX   
+pwd
+
+#
+#  Create  File names
+#
+#
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do
+{
+	yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+	yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+	mo=`$HOME/bin/gps_date -wd $1 $wd  -o "%m"`
+	day=`$HOME/bin/gps_date -wd $1 $wd  -o "%d"`
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+	echo $yr $yr2 $mo $day $doy 
+
+	tail=$doy"0."$yr2"d.Z"
+
+	for site in $sites
+	{
+		file_rnx=$site$tail
+		echo $file_rnx
+		wget -N $ftp_loc$ftp_dir/$yr/$doy/$file_rnx
+	}
+}
+done
+
+# IGS sites of GREF Network
+sites="ffmj hueg brst bzrg geno gras ieng lroc medi pado pots tlse unpg zim2 zimm"
+ftp_dir="IGS/obs/"                  
+
+#wget -N $http_loc$http_dir/$yr/$file_18
+#ftp://igs.bkg.bund.de/IGS/obs/
+#http_dir="DELAY/GRID/VMFG_FC/"
+
+cd $PATH_RNX   
+pwd
+
+
+wds="0 1 2 3 4 5 6"
+for wd in $wds
+do
+{
+	yr=`$HOME/bin/gps_date -wd $1 $wd  -o "%Y"`
+	yr2=`$HOME/bin/gps_date -wd $1 $wd  -o "%y"`
+	mo=`$HOME/bin/gps_date -wd $1 $wd  -o "%m"`
+	day=`$HOME/bin/gps_date -wd $1 $wd  -o "%d"`
+	doy=`$HOME/bin/gps_date -wd $1 $wd  -o "%j"`
+	echo $yr $yr2 $mo $day $doy 
+
+	tail=$doy"0."$yr2"d.Z"
+
+	for site in $sites
+	{
+		file_rnx=$site$tail
+		echo $file_rnx
+		wget -N $ftp_loc$ftp_dir/$yr/$doy/$file_rnx
+	}
+}
+done
+
+echo 'RINEX files for GREF networks loaded'
+
+echo 'Done'
+
+
+
