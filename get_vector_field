@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Prepare Velocity field files (Lat Long Ve Vn) for GMT psvelo
-# Transform coordinates from ITRF2008 (at epoch 2005) into ETRF2000 (at epoch 2005) (optional)
+# Transform coordinates from ITRF2008 (at epoch 2005) into ETRF2000 (at epoch 2005) (option)
+# Remove techtonic plate motion (option)
 # Transform XYZ into NEU
 #
 # Command:
@@ -10,7 +11,8 @@
 #	InputFileName - filname without extention (example: ALP_NET for ALP_NET.CRD and ALP_NET.VEL files)
 #
 # Options 
-#	-e 	perform transformation ITRF to ETRF, see ITRF2ETRF Script
+#	-e/ETRF         Perform transformation ITRF to ETRF, see ITRF2ETRF Script
+#	-res/residual	Remove plate motion of Eurasuan plate to get residual velocity field
 # 
 # By default output written into 4 files see transform XYZ2ENU Script: 
 # 	Velocity_field_horizontal.txt
@@ -26,9 +28,16 @@ echo 'Preparing Velocity field in ENU'
 filename=$1
 flag=$2
 
-paste $filename.CRD $filename.VEL | tail -n +7 | grep -v '        EURA' | grep ' EURA' | awk '{printf"%4s%9-s %15.5f %15.5f %15.5f %10.5f %10.5f %10.5f \n", $2, $3, $4, $5, $6, $11, $12, $13 }'  > ITRF_CRD_VEL
+#paste $filename.CRD $filename.VEL | tail -n +7 | grep -v '        EURA' | grep ' EURA' | awk '{printf"%4s%9-s %15.5f %1#5.5f %15.5f %10.5f %10.5f %10.5f \n", $2, $3, $4, $5, $6, $11, $12, $13 }'  > ITRF_CRD_VEL
+paste $filename.CRD $filename.VEL | tail -n +7 | grep -v '        EURA' | grep ' EURA' | cut --characters=6-70,100-140 > ITRF_CRD_VEL
 
-if [[ $flag == "-e" ]] # in transform ITRF -> ETRF
+cat ITRF_CRD_VEL | cut --characters=1-16 | sed 's/ //g' > names
+cat ITRF_CRD_VEL | cut --characters=17-   > crdvel
+
+paste names crdvel | awk '{printf"%-20s %15.5f %15.5f %15.5f %10.5f %10.5f %10.5f \n",$1, $2, $3, $4, $5, $6, $7}' > ITRF_CRD_VEL 
+rm names crdvel 
+
+if [[ $flag == "-e" || $flag == "-ETRF" ]] # in transform ITRF -> ETRF
 then
 	# get central epoch and convert format from yyyy-mm-dd to yyyy.yy (where .yy is the fraction of the year)
 	#Tc=2010; # Epoch of coordinates 
@@ -40,12 +49,24 @@ then
 	echo "... transforming XYZ -> ENU"
 	transform_XYZ2ENU ETRF_CRD_VEL
 	echo "ETRF" > Velocity_field_info.txt
+	#rm ETRF_CRD_VEL
+
+elif [[ $flag == "-res" || $flag == "-residual" ]] # get residual velocities by removit plate motion
+then
+	echo "... removing plate motion of Eurasian plate"
+	remove_plate_motion ITRF_CRD_VEL > RES_CRD_VEL
+	echo "... transforming XYZ -> ENU"
+	transform_XYZ2ENU RES_CRD_VEL
+	echo "Residual" > Velocity_field_info.txt
+	#rm RES_CRD_VEL
+	
 else
 	echo "... transforming XYZ -> ENU"
 	transform_XYZ2ENU ITRF_CRD_VEL
 	echo "ITRF" > Velocity_field_info.txt
 fi
 
+#rm ITRF_CRD_VEL
 
 #gedit Velocity_field_* &
 
