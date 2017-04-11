@@ -1,0 +1,57 @@
+#!/bin/bash
+# plot Residuals for specified site
+# command:
+# ./plot_resudials_PLT [SiteName] [inputFile]
+# 
+# output:
+# SiteName_plot_PLT.pdf
+
+gmt set FONT_LABEL          10p,Helvetica,black
+gmt set FONT_ANNOT_PRIMARY   7p,Helvetica,black
+gmt set FONT_ANNOT_SECONDARY 6p,Helvetica,black
+
+inputFile="$1"
+
+fileName=plots_$inputFile
+ps=$fileName.ps
+
+
+R=-R2003-12-01T/2017-02-01T/-10/10
+J=-JX16/2.5
+gmt psbasemap $R $J -Bf01oa01Y:"Year":/g50f1a5:"mm":S -Y1i -X1i -K  -P > $ps
+
+################
+
+dx=2.7c
+
+./plot_plt_subplot.gmt ZIMM $inputFile 0  0c
+./plot_plt_subplot.gmt WTZR $inputFile 0  $dx
+#./plot_plt_subplot.gmt TLSE $inputFile 0  $dx
+#./plot_plt_subplot.gmt POTS $inputFile 0  $dx
+#./plot_plt_subplot.gmt MEDI $inputFile 0  $dx
+./plot_plt_subplot.gmt LROC $inputFile 0  $dx
+#./plot_plt_subplot.gmt GRAZ $inputFile 0  $dx
+./plot_plt_subplot.gmt GRAS $inputFile 0  $dx
+#./plot_plt_subplot.gmt BRST $inputFile 0  $dx
+
+echo "2007-01 32 $inputFile"  | gmt pstext -R2003-12-01T/2017-02-01T/-40/40 -F+f9p,Helvetica+jLB  $J -O -K >> $ps
+
+
+################
+
+ps2pdf $ps Plots_pdf/$fileName.pdf
+convert -quality 100 -density 300 -trim Plots_pdf/$fileName.pdf Plots_pdf/$fileName.png
+evince Plots_pdf/$fileName.pdf &
+eog    Plots_pdf/$fileName.png &
+
+
+rm $fileName.ps
+
+#rm Site_changes
+rm Receiver_changes
+rm Ant_Radom_changes
+
+echo 'DONE'
+
+
+

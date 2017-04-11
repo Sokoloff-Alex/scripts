@@ -1,0 +1,202 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+# plots 6 maps for sequential 
+
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+R=-R1/17/42/50
+J=-Jm0.23i
+scale=200i;
+
+dx=9.8c;
+dy=7.2c;
+
+## convert tyz tables into NetCDF grids 
+
+cd Deformation
+
+#xyz2grd Vu_Trend.txt                -R0/18/42/53 -I6m -V  -GVu_Trend.nc
+#xyz2grd Vu_Trend_sigma.txt          -R0/18/42/53 -I6m -V  -GVu_Trend_sigma.nc
+#xyz2grd Vu_Signal.txt               -R0/18/42/53 -I6m -V  -GVu_Signal.nc
+#xyz2grd Vu_Signal_sigma.txt         -R0/18/42/53 -I6m -V  -GVu_Signal_sigma.nc
+#xyz2grd Vu_TrendWithSignal.txt      -R0/18/42/53 -I6m -V  -GVu_TrendWithSignal.nc
+#xyz2grd Vu_TrendAndSignal_sigma.txt -R0/18/42/53 -I6m -V  -GVu_TrendAndSignal_sigma.nc
+
+cd ..
+
+### prepare color palettes ###
+
+mainCPTfile1=polar;
+
+mainCPTfile2=rainbow;
+
+gmt set FONT_ANNOT_PRIMARY 7p,Helvetica,black
+gmt set MAP_FRAME_TYPE plain
+
+############### plot e ################
+B=-Ba2f1/a2f1WSen
+gmt psbasemap $R $J $B  -P -X1c -Y2c                     -K     > Alpen_map.ps
+#gmt grdimage  $R $J     Europe.grd     -Ctopo_simple2.cpt -K -O >> Alpen_map.ps
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps 
+ 
+gmt pscoast   $R $J  -Di -W0.5,gray40  -A1000  -N1,0.5p/gray50                -K -O >> Alpen_map.ps
+gmt makecpt -C$mainCPTfile1 -T-0.6/0.6/0.1 -Z   > Vu_Signal.cpt
+
+gmt grdimage   $R $J    Deformation/Vu_Signal.nc   -CVu_Signal.cpt  -t50 -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J  Deformation/Vu_Signal.nc   -C0.2.cnt  -Wcgray40  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_Signal.cpt -Dx8.25c/0.25c+w2c/0.2c+jBC -Ba0.2  -By+lmm/yr -F+gwhite -O -K >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/3.5c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica e) Stochastic signal    
+EOF
+
+
+# add circle for stations
+#gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+################## plot f ##############################################
+B=-Ba2f1/a2f1wSEn
+gmt psbasemap $R $J $B  -K -X$dx  -O >> Alpen_map.ps
+
+#gmt grdimage $R $J     Europe.grd  -Ctopo_simple2.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps 
+gmt pscoast  $R $J  -Di -W0.5,gray40  -A1000  -N1,0.5p/gray50             -K -O >> Alpen_map.ps
+
+gmt makecpt -C$mainCPTfile2 -T0.1/0.35/0.025 -Z   > Vu_Signal_sigma.cpt
+
+gmt grdimage   $R $J      Deformation/Vu_Signal_sigma.nc  -CVu_Signal_sigma.cpt -t50   -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J    Deformation/Vu_Signal_sigma.nc  -C0.025         -Wcgray40    -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_Signal_sigma.cpt -Dx8.25c/0.25c+w2c/0.2c+jBC -Ba0.05  -By+lmm/yr -F+gwhite -O -K  >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/2.6c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica f) Signal error 
+EOF
+
+################## plot c ################################
+B=-Bf1/a2f1WseN
+gmt psbasemap $R $J $B  -K -O -X-$dx -Y$dy   >> Alpen_map.ps
+
+#gmt grdimage $R $J     Europe.grd  -Ctopo_simple2.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps
+gmt pscoast $R $J  -Di -W0.5,gray40  -A1000  -N1,0.5p/gray50  -K -O >> Alpen_map.ps
+
+gmt makecpt -C$mainCPTfile1 -T-2.5/2.5/0.1 -Z  > Vu_Trend.cpt
+
+gmt grdimage  $R $J     Deformation/Vu_Trend.nc  -CVu_Trend.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J  Deformation/Vu_Trend.nc  -Ckriging_contours.cnt -Akriging_contours.cnt -Wagray20    -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_Trend.cpt -Dx8.45c/0.25c+w2c/0.2c+jBC -Ba1  -By+lmm/yr -F+gwhite -O -K  >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/1.8c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica c) Trend    
+EOF
+
+########## plot d ###############################
+B=-Bf1/a2f1wsEN
+gmt psbasemap  $R $J $B -K -O -X$dx  >> Alpen_map.ps
+
+#gmt grdimage $R $J     Europe.grd  -Ctopo_simple2.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps 
+gmt pscoast    $R $J  -Di -W0.5,gray40  -A1000 -N1,0.5p/gray50          -K -O >> Alpen_map.ps
+
+gmt makecpt -C$mainCPTfile2 -T0/0.5/0.05 -Z  > Vu_Trend_sigma.cpt
+
+gmt grdimage   $R $J    Deformation/Vu_Trend_sigma.nc  -CVu_Trend_sigma.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J  Deformation/Vu_Trend_sigma.nc  -C0.1        -Wcgray40     -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast    $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_Trend_sigma.cpt -Dx8.35c/0.25c+w2c/0.2c+jBC -Ba0.1  -By+lmm/yr -F+gwhite -O -K  >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/2.6c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica d) Trend error  
+EOF
+
+
+################## plot a ################################
+B=-Ba2f1/a2f1WseN
+gmt psbasemap $R $J $B  -K -O -X-$dx -Y$dy   >> Alpen_map.ps
+
+#gmt grdimage $R $J     Europe.grd  -Ctopo_simple2.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps 
+gmt pscoast $R $J  -Di -W0.5,gray40  -A1000  -N1,0.5p/gray50  -K -O >> Alpen_map.ps
+
+gmt makecpt -C$mainCPTfile1 -T-2.5/2.5/0.1 -Z  > Vu_Tr_sigma_LSC.cpt
+
+gmt grdimage  $R $J     Deformation/Vu_TrendWithSignal.nc  -CVu_Tr_sigma_LSC.cpt -t50                                    -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J  Deformation/Vu_TrendWithSignal.nc  -Ckriging_contours.cnt -Akriging_contours.cnt  -Wagray20  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_Tr_sigma_LSC.cpt -Dx8.45c/0.25c+w2c/0.2c+jBC -Ba1  -By+lmm/yr -F+gwhite -O -K  >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/4.0c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica a) Vertical deformation  
+EOF
+
+
+########## plot b ###############################
+B=-Ba2f1/a2f1wsEN
+gmt psbasemap  $R $J $B  -K -O -X$dx  >> Alpen_map.ps
+
+#gmt grdimage $R $J     Europe.grd  -Ctopo_simple2.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J     Europe.grd -IEurope_grad2.grd    -Ctopo_tectonics_dark.cpt -K -O >> Alpen_map.ps 
+gmt pscoast    $R $J  -Di -W0.5,gray40  -A1000 -N1,0.5p/gray50          -K -O >> Alpen_map.ps
+
+gmt makecpt -C$mainCPTfile2 -T0.1/0.7/0.05 -Z  > Vu_TrAndsignal_sigma_LSC.cpt
+
+gmt grdimage   $R $J    Deformation/Vu_TrendAndSinal_sigma.nc  -CVu_TrAndsignal_sigma_LSC.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdcontour $R $J  Deformation/Vu_TrendAndSinal_sigma.nc  -C0.1              -Wcgray40         -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast    $R $J   -Di -W0.5,gray40  -N1,0.5p/gray50 -A1000  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.05 -Ggray30 -K -O  >>  Alpen_map.ps 
+
+gmt psscale  -CVu_TrAndsignal_sigma_LSC.cpt -Dx8.35c/0.25c+w2c/0.2c+jBC -Ba.1    -By+lmm/yr -F+gwhite -O -K  >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0c/6.1c/4.7c/.6c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica b) Vertical deformation error  
+EOF
+
+
+##### end of plots ######################
+
+
+ps2pdf Alpen_map.ps Results/Deformation_Vertical_LSC.pdf
+convert -quality 100 -density 300 -trim  Results/Deformation_Vertical_LSC.pdf Results/Deformation_Vertical_LSC.png
+
+evince Results/Deformation_Vertical_LSC.pdf &
+eog    Results/Deformation_Vertical_LSC.png &
+
+
+

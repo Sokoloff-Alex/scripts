@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Parse *.OUT files and dind difference between estimated coordinates
+#
+
+Inputfile_1=$1
+Inputfile_2=$2
+
+
+tail -n+7 $Inputfile_1 | grep '   A\|   W' | cut --characters=6-21 > list_1
+tail -n+7 $Inputfile_2 | grep '   A\|   W' | cut --characters=6-21 > list_2
+
+cat list_1 list_2 | sort | uniq --repeated > list_common
+
+rm CRD_diff
+
+while read line 
+do {
+	grep "$line" --no-filename "$Inputfile_1" "$Inputfile_2" | tr '\n' ' ' | awk '{printf "%s\n", $0}' |  awk '{printf "%4s%-11s    %15.6f %15.6f %15.6f    %10.6f %10.6f %10.6f \n", $2, $3, ($4+$11)/2, ($5+$12)/2,  ($6+$13)/2, $4-$11, $5-$12, $6-$13 }' >> CRD_diff
+} done < list_common
+
+
+grep 'igs\|igb\|epn' list_1 list_2 --no-filename | cut --characters=1-9,13-14 | awk '{printf "%s %s...%s\n", $1, substr($2,1,4), substr($2,5,2)}' | sort | uniq > list_diff_names
+
+while read line
+do {
+	grep "$line" --no-filename "$Inputfile_1" "$Inputfile_2" | grep '   A\|   W' | tr '\n' ' ' | awk '{printf "%s\n", $0}' |  awk '{ if ( ( $7 == "A" || $7 == "W") && ( $14 == "A" || $14 == "W")) printf "%4s%-11s    %15.6f %15.6f %15.6f    %10.6f %10.6f %10.6f \n", $2, $3, ($4+$11)/2, ($5+$12)/2,  ($6+$13)/2, $4-$11, $5-$12, $6-$13 }' >> CRD_diff			
+} done < list_diff_names
+
+# transform XYZ zo ENU
+echo "Long, [deg]     Lat, [deg]      dE,[m]        dN,[m]        Marker"  > crd_diff_horizontal.txt
+echo "Long, [deg]     Lat, [deg]      dE,[0,m]      dN,[dV,m]     Marker"  > crd_diff_vertical.txt
+while read line
+do {
+	line=($line)
+	SITE=${line[0]}	
+	X=${line[1]}
+	Y=${line[2]}
+	Z=${line[3]} 
+	dX=${line[4]}
+	dY=${line[5]}
+	Vz=${line[6]} 
+
+	LLH=$( ~/bin/GPSTk/bin/poscvt --ecef="$X $Y $Z" --output-format="%A %L %h" )
+	Latitude=$( echo "$LLH" |  cut -f1 -d" ")
+	Longitude=$(echo "$LLH" |  cut -f2 -d" ")
+	Height=$(   echo "$LLH" |  cut -f3 -d" ")
+	
+	#echo "$SITE    $X  $Y  $Z    $dX  $dY  $Vz" 
+
+	## Crude transformation !!!
+
+	#################### Transformation XYZ => ENU ######################################
+	# http://www.navipedia.net/index.php/Transformations_between_ECEF_and_ENU_coordinates
+	
+	Long=$(echo $Longitude | awk '{print $1/180*3.14159}')  # Lambda
+	Lat=$( echo $Latitude  | awk '{print $1/180*3.14159}')  # Phi
+	#echo "$Longitude $Long  $Latitude $Lat"
+
+	dE=$(echo "$dX $dY $Vz $Long $Lat" | awk '{print -sin($4)*$1         + cos($4)*$2         +    0      }')
+	dN=$(echo "$dX $dY $Vz $Long $Lat" | awk '{print -cos($4)*sin($5)*$1 - sin($4)*sin($5)*$2 + cos($5)*$3}')
+	dU=$(echo "$dX $dY $Vz $Long $Lat" | awk '{print  cos($4)*cos($5)*$1 + sin($4)*cos($5)*$2 + sin($5)*$3}')
+
+	#echo "$dE $dN $dU"
+
+	#####################################################################################
+
+	#echo "$Longitude $Latitude $dE $dN $SITE" | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'
+	echo "$Longitude $Latitude $dE $dN $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> crd_diff_horizontal.txt
+	echo "$Longitude $Latitude  0  $dU $SITE"  | awk '{printf"%-12.6f  %12.6f   %10.6f    %10.6f      %4s \n", $1, $2, $3, $4, $5}'  >> crd_diff_vertical.txt
+	
+} done < CRD_diff

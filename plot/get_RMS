@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#SITE=$1
+inputFile=$1
+
+echo "SITE      RMS_N,mm     RMS_E,mm     RMS_U,mm     RMS_H,mm     RMS_T,mm"
+
+while read SITE
+do {
+	#echo "$SITE"
+	grep "$SITE" "$inputFile" > "$SITE".CRD
+	awk < $SITE.CRD '{if ($4 == 1) print $5}' > North
+	awk < $SITE.CRD '{if ($4 == 2) print $5}' > East
+	awk < $SITE.CRD '{if ($4 == 3) print $5}' > Up
+	rm $SITE.CRD
+
+	RMS_N=$(awk < North '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_E=$(awk < East  '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_U=$(awk < Up    '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )	
+	RMS_H=$(paste North East    | awk '{print (sqrt($1*$1 + $2*$2))}'         | awk '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_T=$(paste North East Up | awk '{print (sqrt($1**2 + $2**2 + $3**2))}' | awk '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+
+	echo "$SITE $RMS_N $RMS_E $RMS_U $RMS_H $RMS_T" | awk '{printf"%4s %12.3f %12.3f %12.3f %12.3f %12.3f \n", $1, $2, $3, $4, $5, $6}'
+	
+} done < Station_list2
+	
+#echo "Done"
+
+
+
+
+
+
+
+
+
+

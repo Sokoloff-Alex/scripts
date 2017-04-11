@@ -1,0 +1,278 @@
+#!/bin/bash
+# plot Residuals for specified site
+# command:
+# ./plot_resudials_PLT [SiteName] [inputFile]
+# 
+# output:
+# SiteName_plot_PLT.pdf
+
+
+SITE=$1
+inputFile="$2"
+inputFile2="$3"
+
+echo "Plot overlay residual for $SITE from files: $inputFile and $inputFile2" 
+
+
+### make table for Equipment changes
+#grep "$SITE " ALP_NET.STA | tail -n +2 | awk '{printf"%4s-%2s-%2s\n", $4, $5, $6}' | sort | uniq > Site_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-120 | uniq --skip-chars=42 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Receiver_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-202 | uniq --skip-chars=94 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Ant_Radom_changes
+
+
+### find Functional model by differencing Input-Ouput *.PLT files
+bash get_residuals_PLT $SITE $inputFile2  # Extract Residuals for SITE from inputFile2 file  !!!  
+#        A posteriory residuals
+cat North > North_2
+cat East  > East_2
+cat Up    > Up_2
+
+#bash get_coordinates_PLT $SITE $inputFile  # Extract Residuals for SITE from inputFile file
+bash get_residuals_PLT $SITE $inputFile  # Extract Residuals for SITE from inputFile file  !!! much faster, but required file time_table.txt 
+
+
+# get RMS from inputFile
+RMS_N=$(awk < North '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+RMS_E=$(awk < East  '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+RMS_U=$(awk < Up    '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+
+fileName="$SITE"_plot_"$inputFile"
+ps=$fileName.ps
+echo $fileName
+
+######################## Residuals subplot ##################################################
+
+### Plot Residuals for Up component ###
+
+# check min & max values of Residuals
+min=$(more Up | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -40) print -40; else if ($1 > -10) print -10; else print $1}')
+max=$(more Up | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  40) print  40; else if ($1 <  10) print  10; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+J=-JX25.75/8
+
+GMT gmtset PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+GMT psbasemap $R $J -Bf01oa01Y:"Year":/g50f1a5:"[mm]":WESn  -K > $ps
+
+
+
+### Add threshold ---
+echo "2003-12-01 15" > newLine
+echo "2017-02-01 15" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -15" > newLine
+echo "2017-02-01 -15" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+### Add lines for Eqiupment changes 
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# plot residuals
+#GMT psxy $R $J Up   -W1/200/050/025 -K -O >> $ps
+GMT psxy $R $J Up   -Ey0.1/160/160/160  -K -O >> $ps
+GMT psxy $R $J Up     -Sc0.1    -G160/000/000   -K -O >> $ps
+GMT psxy $R $J Up_2   -Sc0.1    -G255/150/050   -K -O >> $ps
+
+
+
+
+##################### Add legend for Equipment changes #######################
+
+echo "2004-03-01 -39" > newLine
+echo "2004-03-01 -30" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -W20/250/100/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2004-04-01 -36 10 0 0 0 Antenna / Radom change
+EOF
+
+echo "2006-06-01 -39" > newLine
+echo "2006-06-01 -30" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -W5/100/250/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2006-07-01 -36 10 0 0 0 Receiver change
+EOF
+
+# Add legend for timeseries
+echo "2004-03-01 35" > newLine
+echo "2004-08-01 35" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine        -W1/200/050/025 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -Sc0.1   -G200/050/025 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2004-10-01 34 10 0 0 0 Up-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2016-02-01 32 16 0 0 0 $SITE 
+EOF
+
+text=$(echo "$RMS_U" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2014-02-01 32 12 0 0 0 $text
+EOF
+
+
+
+### Plot Residuals for East component  ###
+
+min=$(more East | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -15) print -15; else if ($1 > -5) print -5; else print $1}')
+max=$(more East | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  15) print  15; else if ($1 <  5) print  5; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+
+J=-JX25.75/4
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f1a5:"[mm]":WEsn -Y3.5i  -O -K >> $ps
+
+
+
+### Add threshold ---
+echo "2003-12-01 10" > newLine
+echo "2017-02-01 10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -10" > newLine
+echo "2017-02-01 -10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+### Add lines for Eqiupment changes 
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# Add legend for timeseries
+echo "2004-03-01 15" > newLine
+echo "2004-08-01 15" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine         -W1/000/000/120 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine  -Sc0.1   -G000/000/100 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2004-10-01 14 10 0 0 0 East-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2016-02-01 13 16 0 0 0 $SITE
+EOF
+
+
+# plot temeseries
+#GMT psxy $R $J East         -W1/000/000/120 -K -O >> $ps
+GMT psxy $R $J East  -Ey0.1/160/160/160   -K -O >> $ps
+GMT psxy $R $J East     -Sc0.1    -G000/000/100 -K -O >> $ps
+GMT psxy $R $J East_2   -Sc0.1    -G050/150/250   -K -O >> $ps
+
+
+
+text=$(echo "$RMS_E" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2014-02-01 13 12 0 0 0 $text
+EOF
+
+### Plot Residuals for North component ###
+
+min=$(more North | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -15) print -15; else if ($1 > -5) print -5; else print $1}')
+max=$(more North | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  15) print  15; else if ($1 <  5) print  5; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+J=-JX25.75/4
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f1a5:"[mm]":WEsn -Y2i  -O -K >> $ps
+
+
+
+echo "2003-12-01 10" > newLine
+echo "2017-02-01 10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -10" > newLine
+echo "2017-02-01 -10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# Add legend for timeseries
+echo "2004-03-01 15" > newLine
+echo "2004-08-01 15" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine        -W1/000/050/025 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine -Sc0.1   -G000/050/025 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2004-10-01 14 10 0 0 0 North-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2016-02-01 13 16 0 0 0 $SITE
+EOF
+
+
+# plot residuals 
+#GMT psxy $R $J North        -W1/000/050/025 -K -O >> $ps
+GMT psxy $R $J North -Ey0.1/160/160/160     -K -O >> $ps
+GMT psxy $R $J North -Sc0.1   -G000/050/025 -K -O >> $ps
+GMT psxy $R $J North_2   -Sc0.1   -G050/250/050   -K -O >> $ps
+
+
+text=$(echo "$RMS_N" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2014-02-01 13 12 0 0 0 $text
+EOF
+
+
+###########################################################################
+
+ps2pdf    $ps Plots_pdf/$fileName.pdf
+#GMT ps2raster $ps  Plots_png/$fileName.png
+ evince Plots_pdf/$fileName.pdf &
+#convert Plots_pdf/$fileName.pdf Plots_png/$fileName.png
+#eog Plots_png/$fileName.png &
+#psresize -pA4 -pA3 $fileName.pdf "$fileName"_A3.pdf
+rm $fileName.ps
+
+#rm Site_changes
+rm Receiver_changes
+rm Ant_Radom_changes
+rm newLine
+rm North
+rm East
+rm Up
+rm North_2
+rm East_2
+rm Up_2
+
+echo 'DONE'
+
+
+
+

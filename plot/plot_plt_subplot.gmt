@@ -1,0 +1,87 @@
+#!/bin/bash
+# plot Residuals for specified site
+# command:
+# ./plot_resudials_PLT [SiteName] [inputFile]
+# 
+# output:
+# SiteName_plot_PLT.pdf
+
+gmt set FONT_LABEL          10p,Helvetica,black
+gmt set FONT_ANNOT_PRIMARY   7p,Helvetica,black
+gmt set FONT_ANNOT_SECONDARY 6p,Helvetica,black
+
+SITE=$1
+inputFile="$2"
+
+dx=$3
+dy=$4
+
+inputFile_OUT=$(echo "$inputFile" | tr "." "\n" | head -1 )
+inputFile_OUT=$inputFile_OUT".OUT"
+
+#echo "Plot residual for $SITE from $inputFile" 
+
+### make table for Equipment changes
+#grep "$SITE " ALP_NET.STA | tail -n +2 | awk '{printf"%4s-%2s-%2s\n", $4, $5, $6}' | sort | uniq > Site_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-120 | uniq --skip-chars=42 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Receiver_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-202 | uniq --skip-chars=94 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Ant_Radom_changes
+
+#bash get_coordinates_PLT $SITE $inputFile  # Extract Residuals for SITE from inputFile file
+bash get_residuals_PLT $SITE $inputFile  # Extract Residuals for SITE from inputFile file  !!! much faster, but required file time_table.txt 
+
+# get RMS 
+RMS_U=$(awk < Up    '{ sum += $2^2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+
+fileName=plots_$inputFile
+ps=$fileName.ps
+
+######################## Residuals subplot ##################################################
+
+### Plot Residuals for Up component ###
+
+# check min & max values of Residuals
+min=$(more Up | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -40) print -40; else if ($1 > -10) print -10; else print $1}')
+max=$(more Up | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  40) print  40; else if ($1 <  10) print  10; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+J=-JX16/2.5
+
+#gmt gmtset PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+gmt psbasemap $R $J -Bf01oa01Y/g50f1a5:"[mm]":Wes -X$dx -Y$dy  -O -K >> $ps
+
+### Add threshold ---
+echo "2003-12-01  15 
+      2017-02-01  15" | gmt psxy $R $J -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -15   
+      2017-02-01 -15" | gmt psxy $R $J -Wthinner,- -O -K >> $ps
+
+### Add lines for Eqiupment changes 
+while read line
+do {
+	echo "$line   -$lim  
+              $line    $lim " | gmt psxy $R $J   -W3,250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim 
+	      $line    $lim" | gmt psxy $R $J   -W1,100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# plot residuals
+#gmt psxy $R $J Up  -W1,200/050/025 -K -O >> $ps
+gmt psxy $R $J Up   -Ey0.1/gray70   -Sc0.1  -G200/050/025   -K -O >> $ps
+
+
+#======= Add legend for timeseries
+
+echo "2016-02-01 32 $SITE"  | gmt pstext -R2003-12-01T/2017-02-01T/-40/40 -F+f9p,Helvetica+jLB  $J -O -K >> $ps
+
+text=$(echo "$RMS_U" | awk '{printf "RMS %-5.2f mm", $1}')
+echo "2014-02-01 32 $text" | gmt pstext -R2003-12-01T/2017-02-01T/-40/40 $J -F+f9p,Helvetica+jLB -O -K  >> $ps
+
+
+efc=$(grep "Y  HELMR\|Y  ESTIM" $inputFile_OUT | grep "$SITE" | head -1 | cut -c28-33 )
+echo "2004-06-01 32 $efc" | gmt pstext -R2003-12-01T/2017-02-01T/-40/40 $J -F+f8p,Helvetica+jLB -O -K  >> $ps
+
+

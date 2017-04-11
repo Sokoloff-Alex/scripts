@@ -1,0 +1,47 @@
+#!/bin/bash
+#SITE=$1
+inputFile=$1
+
+cat $inputFile | cut -c-14 | uniq | sort | uniq > Station_list3
+
+echo "SITE DOME            RMS_N,mm     RMS_E,mm     RMS_U,mm     RMS_H,mm     RMS_T,mm       Lat,deg     Long,deg"
+
+while read SITE_DOME
+do {
+	#echo "$SITE_DOME"
+	SITE=$(echo "$SITE_DOME" | cut --characters=1-4 )
+	DOME=$(echo "$SITE_DOME" | cut --characters=6-14)
+	grep "$SITE_DOME" "$inputFile" > "$SITE".CRD
+	awk < $SITE.CRD '{if ($4 == 1) print $5}' > North
+	awk < $SITE.CRD '{if ($4 == 2) print $5}' > East
+	awk < $SITE.CRD '{if ($4 == 3) print $5}' > Up
+	rm $SITE.CRD
+
+	RMS_N=$(awk < North '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_E=$(awk < East  '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_U=$(awk < Up    '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )	
+	RMS_H=$(paste North East    | awk '{print (sqrt($1*$1 + $2*$2))}'         | awk '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+	RMS_T=$(paste North East Up | awk '{print (sqrt($1**2 + $2**2 + $3**2))}' | awk '{ sum += $1*$1; n++ } END { if (n > 0) print sqrt( sum / n) *1000; }' )
+
+	Long=$(grep --max-count=1 "$SITE\|$DOME" Map_auxiliary/LLH_CRD_all.txt | cut --characters=2-12)
+	Lat=$( grep --max-count=1 "$SITE\|$DOME" Map_auxiliary/LLH_CRD_all.txt | cut --characters=16-26)
+
+	echo "$SITE $DOME $RMS_N $RMS_E $RMS_U $RMS_H $RMS_T $Long $Lat" | awk '{printf"%4s %-10s %12.3f %12.3f %12.3f %12.3f %12.3f    %12.7f %12.7f \n", $1, $2, $3, $4, $5, $6, $7, $8, $9}'
+	
+} done < Station_list3 #Station_list2
+
+rm North
+rm East
+rm Up
+	
+#echo "Done"
+
+
+
+
+
+
+
+
+
+

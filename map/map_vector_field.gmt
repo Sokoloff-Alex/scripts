@@ -1,0 +1,141 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset COLOR_FOREGROUND white 
+#gmt gmtset COLOR_BACKGROUND white
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+R=-R-6/18/41/52.6
+J=-Jm0.43i
+B=-Ba4g4f1/a2g2f1
+
+gmt psbasemap $R $J $B -K -X0.7i -Y0.5i  > Alpen_map.ps
+gmt pscoast $R $J $B  -Di -G240 -W0.5  -S222/233/241 -I2 -N1  -K -O >> Alpen_map.ps 
+
+#gmt pscoast -Rg -JN180/22 -Dl -A5000 -V -G200 -K -Y4 > Alpen_map.ps 
+#gmt psxy $J $R -h1 BirdModell/PB2002_plates.dig.txt -W0.5p,red -Sf0.25/3p -Gred -Ba30:."Bird's 2003 Plates": -K -O >> Alpen_map.ps 
+gmt psxy -J -R BirdModell/PB2002_orogen_Alps.txt    -W0.5p,red -Sf0.25/3p -Gred -Ba30:."Bird's 2003 Orogens":          -K -O >> Alpen_map.ps 
+
+
+
+# clusters
+# bash splitClusters 
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_1.d      -Sc0.3 -G255/255/000  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_2.d      -Sc0.3 -G200/155/255  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_3.d      -Sc0.3 -G255/155/000  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_4.d      -Sc0.3 -G000/255/255  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_5.d      -Sc0.3 -G255/100/100  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_6.d      -Sc0.3 -G000/155/055  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_7.d      -Sc0.3 -G255/200/000  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_8.d      -Sc0.3 -G000/155/055  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_9.d      -Sc0.3 -G055/255/000  -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_10.d     -Sc0.3 -G000/155/255  -K -O  >> Alpen_map.ps
+
+# stations
+#gmt psxy $R $J Map_auxiliary/AUSTRIA.selected.d      -St0.2  -G000/050/025 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALPEN.selected.d        -St0.2  -G250/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/FREDNET.selected.d      -St0.2  -G000/150/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/RENAG.selected.d        -St0.2  -G200/100/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/GREF.d                  -St0.2  -G000/100/200 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/IGS.d	    	      -St0.5  -G128/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/EPN.d           	      -St0.5  -G050/000/250 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/VERNAGT.d    	      -St0.5  -G250/000/100 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/IGB08_R.d    	      -Sc0.5  -G050/250/250 -K -O  >> Alpen_map.ps
+
+gmt psxy $R $J Map_auxiliary/EPN_cnstr.d       	      -St0.5  -G150/000/250 -K -O  >> Alpen_map.ps
+
+
+# Add velocity vectors
+
+#echo "flag:$flag:"
+if [[ $flag == "-h" ]]
+then
+	solution_text="Hor" 
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr200i/0.99/0       -Gblue      -W0.4,blue          -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr200i/1/5p         -Gblue      -W1,blue            -K -O  >> Alpen_map.ps;
+
+elif [[ $flag == "-v" ]]
+then
+	solution_text="Vert"  
+	gmt psvelo $R $J -h1 Velocity_field_vertical_Uplift.txt        -Sr200i/0.99/0       -Gdarkgreen -W0.4,forestgreen   -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_Uplift.txt        -Sr200i/1/5p         -Gdarkgreen -W1,darkgreen       -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_subduction.txt    -Sr200i/0.99/0       -Gred       -W0.4,lightred      -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_subduction.txt    -Sr200i/1/5p         -Gred       -W1,red             -K -O  >> Alpen_map.ps;
+else
+	solution_text="Hor_&_Vert" 
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr200i/0.99/0       -Gblue      -W0.4,blue          -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_Uplift.txt        -Sr200i/0.99/0       -Gdarkgreen -W0.4,forestgreen   -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_subduction.txt    -Sr200i/0.99/0       -Gred       -W0.4,lightred      -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr200i/1/5p         -Gblue      -W1,blue            -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_Uplift.txt        -Sr200i/1/0          -Gdarkgreen -W1,darkgreen       -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_subduction.txt    -Sr200i/1/0          -Gred       -W1,red             -K -O  >> Alpen_map.ps;
+	#gmt psvelo $R $J -h1 Velocity_field_vertical.txt              -Sr200i/0.99/5p      -Gred       -W1,red             -K -O  >> Alpen_map.ps
+fi
+
+gmt pstext Map_auxiliary/AUSTRIA.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/ALPEN.selected.d     -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/FREDNET.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/RENAG.selected.d     -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/GREF.d               -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/IGS.d 	    	      -F+f5p,Helvetica  -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/EPN.d 	     	      -F+f5p,Helvetica  -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/VERNAGT.d            -F+f5p,Helvetica  -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+
+Frame=$(more Velocity_field_info.txt)
+
+#Add LEGEND
+echo "-5.0 52.10  GNSS stations at Alpen region" > text.txt
+gmt pstext text.txt $R $J  -F+f20p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+echo "-5.0 51.70  Horizontal and Vertical velocities, $Frame.  " > text.txt
+gmt pstext text.txt $R $J  -F+f15p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+echo "-5.0 51.40  $SolutionName" > text.txt
+gmt pstext text.txt $R $J  -F+f10p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0i/0i/2.5i/1.25i/BL  -O -K << EOF >> Alpen_map.ps
+# Legend test for pslegend
+# G is vertical gap, V is vertical line, N sets # of columns, D draws horizontal line.
+# H is header, L is label, S is symbol, T is paragraph text, M is map scale.
+#
+#G 0.25i
+H 20 Times-Roman Velocity field map
+G 0.05i
+EOF
+echo "-5.0  42.5	0.000  -0.002 	   -2mmPerYear" > symb.txt
+gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -Gred -W1,red    -K -O >> Alpen_map.ps
+echo "-5.5  41.8	0.000	0.002 	2mmPerYear" > symb.txt
+gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -G000/100/000 -W1,000/100/000    -K -O >> Alpen_map.ps
+
+echo "-4.0 42.15  2 mm/yr, Vertical" > text.txt
+gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+echo "-5.5  41.5	0.002	0.000 	2mmPerYear" > symb.txt
+gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -Gblue -W1,blue    -K -O >> Alpen_map.ps
+echo "-4.0 41.5  2 mm/yr, Horizontal" > text.txt
+gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+
+rm symb.txt
+rm text.txt
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+#convert Alpen_map.pdf Alpen_map.png
+#psresize -pA4 -pA3 Alpen_map.pdf Alpen_map_A3.pdf
+# eog Alpen_map.png &
+
+mv Alpen_map.pdf Results/Alpen_map_velocity_field_$Frame"_"$solution_text.pdf
+
+#echo "flag2:$flag2:"
+if [[ $flag2 == "-q" ||  $flag2 == "-quite" ]]   # quite, do not open file 
+then
+	echo "  ... map Results/Alpen_map_velocity_field_$Frame"_"$solution_text.pdf is ready." # quite mode
+else 
+	evince Results/Alpen_map_velocity_field_$Frame"_"$solution_text.pdf &
+fi
+
+

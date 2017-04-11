@@ -1,0 +1,76 @@
+#!/bin/bash
+
+SITE=$1
+Case=5
+
+CRD_Apriory=($(grep "$SITE" ALP_NET.CRD | awk '{print $4, $5, $6}'))
+X_0=${CRD_Apriory[0]}
+Y_0=${CRD_Apriory[1]}
+Z_0=${CRD_Apriory[2]}
+
+echo "Coorditates at Epoch 2005-01-01"
+echo "$X_0 $Y_0 $Z_0"
+echo "  Epoch                       Coordinates                           Translation                   Resudials       "
+echo "YYYY-MM-DD        X,m             Y,m             Z,m           dX,mm    dY,mm    dZ,mm       N,mm     E,mm     U,mm" 
+#echo "  Epoch                       Coordinates                           Translation                   Resudials         "    >  CRD/$SITE.CRD
+#echo "YYYY-MM-DD        X,m             Y,m             Z,m           dX,mm    dY,mm    dZ,mm       N,mm     E,mm     U,mm"    >> CRD/$SITE.CRD
+#     2004-01-02  4231162.589480  -332746.701170  4745130.921950      10.48   -19.17    -7.05     -15.15    10.25   -19.28
+
+grep $SITE Resudials_$Case/HLM*.OUT | cut -c16-21  > SessionList 
+
+
+rm CRD/$SITE.CRD
+rm dX
+rm dY
+rm dZ
+rm North
+rm East
+rm Up
+
+while read Session
+do {  
+	Epoch=$(   grep  "EPOCH" Results_F1_$Case/F1_"$Session".CRD | awk '{print $6}')
+        CRD_XYZ=($(grep  "$SITE" Results_F1_$Case/F1_"$Session".CRD | awk '{print $4, $5, $6}'))
+	Res_NEU=($(grep  "$SITE" Resudials_$Case/HLM"$Session".OUT  | awk '{print $10, $11, $12}'))
+	X=${CRD_XYZ[0]}
+	Y=${CRD_XYZ[1]}
+	Z=${CRD_XYZ[2]}
+	dX=$(echo $X*1000 - $X_0*1000 | bc)
+	dY=$(echo $Y*1000 - $Y_0*1000 | bc)
+	dZ=$(echo $Z*1000 - $Z_0*1000 | bc)
+	N=${Res_NEU[0]}
+	E=${Res_NEU[1]}
+	U=${Res_NEU[2]}
+	
+	#echo "$Epoch  $X $Y $Z   $dX $dY $dZ   $N $E $U" | awk '{printf("%10s %15.6f %15.6f %15.6f   %8.2f %8.2f %8.2f   %8.2f %8.2f %8.2f \n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)}'
+        echo "$Epoch  $X $Y $Z   $dX $dY $dZ   $N $E $U" | awk '{printf("%10s %15.6f %15.6f %15.6f   %8.2f %8.2f %8.2f   %8.2f %8.2f %8.2f \n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)}' >> CRD/$SITE.CRD
+	
+	echo "$Epoch $dX" >> dX
+	echo "$Epoch $dY" >> dY
+	echo "$Epoch $dZ" >> dZ
+
+	echo "$Epoch $N"  >> North
+	echo "$Epoch $E"  >> East
+	echo "$Epoch $U"  >> Up
+	
+} done < SessionList
+
+rm SessionList
+
+
+#rm dX
+#rm dY
+#rm dZ
+#rm North
+#rm East
+#rm Up
+
+echo 'DONE'
+
+
+
+
+
+
+
+

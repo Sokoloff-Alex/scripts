@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SITE=$1
+InputFile=$2
+
+grep $SITE $InputFile | grep ' 1  ' | cut --characters=25-35 > n
+grep $SITE $InputFile | grep ' 2  ' | cut --characters=25-35 > e
+grep $SITE $InputFile | grep ' 3  ' | cut --characters=25-35 > u
+
+paste n e u | gnuplot -p -e "splot '-' set size square"  
+

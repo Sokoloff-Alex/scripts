@@ -1,0 +1,31 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset COLOR_FOREGROUND white 
+#gmt gmtset COLOR_BACKGROUND white
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+R=-R-6/18/41/52.6
+J=-Jm0.43i
+B=-Ba4g4f1/a2g2f1
+
+#gmt psbasemap $R $J $B -K -X0.7i -Y0.5i  > Alpen_map.ps
+#gmt pscoast $R $J $B  -Di -G240 -W0.5  -S222/233/241 -I2 -N1  -K -O >> Alpen_map.ps 
+
+gmt pscoast -Rg -JN180/22 -Dl -A5000 -V -G200 -K -Y4 > Alpen_map.ps 
+gmt psxy -J -R -h1 BirdModell/PB2002_plates.dig.txt     -W0.5p,red   -Sp0.05/3p -Gred   -Ba30:."PB2002": -K -O >> Alpen_map.ps 
+gmt psxy -J -R -h1 BirdModell/PB2002_orogens.dig.txt    -W0.5p,blue  -Sp0.05/3p -Gblue                   -K -O >> Alpen_map.ps 
+gmt psxy -J -R -h1 BirdModell/PB2002_boundaries.dig.txt -W0.5p,green -Sp0.05/3p -Ggreen                  -K -O >> Alpen_map.ps 
+
+
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+evince Alpen_map.pdf
+

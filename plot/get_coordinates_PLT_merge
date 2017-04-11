@@ -1,0 +1,65 @@
+#!/bin/bash
+
+
+SITES_listfile=$1
+inputFile=$2
+
+
+rm SITE.CRD_mix
+
+while read SITE 
+do {
+	grep "$SITE" $inputFile >> SITE.CRD_mix
+} done < Artificial_SITES/$SITES_listfile
+
+rm North_mix
+rm East_mix
+rm Up_mix
+
+
+
+more SITE.CRD_mix | awk '{if ($4 == 1) printf"%-15.6f   %10.5f  %10.5f \n", $6, $5, $7}' > North_mjd_mix
+more SITE.CRD_mix | awk '{if ($4 == 2) printf"%-15.6f   %10.5f  %10.5f \n", $6, $5, $7}' > East_mjd_mix
+more SITE.CRD_mix | awk '{if ($4 == 3) printf"%-15.6f   %10.5f  %10.5f \n", $6, $5, $7}' > Up_mjd_mix
+rm SITE.CRD_mix
+
+paste North_mjd_mix East_mjd_mix Up_mjd_mix | awk '{printf"%-16s %10s %10s     %10s %10s     %10s %10s \n", $1, $2, $3, $5, $6, $8, $9}' > NEU_mjd_mix#
+
+rm North_mjd_mix
+rm East_mjd_mix
+rm Up_mjd_mix
+
+
+while read line 
+do {		
+	line=($line)	
+	MJD=$(echo ${line[0]})
+	Date=$(gps_date -mjd $MJD -o "%Y-%m-%d")
+
+	Res_N_m=$(echo ${line[1]})
+	Res_N_mm=$(echo $Res_N_m*1000 | bc)
+	RMS_N_m=$(echo ${line[2]})
+	RMS_N_mm=$(echo $RMS_N_m*1000 | bc)
+
+	Res_E_m=$(echo ${line[3]})
+	Res_E_mm=$(echo $Res_E_m*1000 | bc)
+	RMS_E_m=$(echo ${line[4]})
+	RMS_E_mm=$(echo $RMS_E_m*1000 | bc)
+
+	Res_U_m=$(echo ${line[5]})
+	Res_U_mm=$(echo $Res_U_m*1000 | bc)
+	RMS_U_m=$(echo ${line[6]})
+	RMS_U_mm=$(echo $RMS_U_m*1000 | bc)
+
+	echo "$Date  $Res_N_mm  $RMS_N_mm" | awk '{printf "%10s    %12.3f  %10.5f \n",$1, $2, $3}' >> North_mix
+	echo "$Date  $Res_E_mm  $RMS_E_mm" | awk '{printf "%10s    %12.3f  %10.5f \n",$1, $2, $3}' >> East_mix
+	echo "$Date  $Res_U_mm  $RMS_U_mm" | awk '{printf "%10s    %12.3f  %10.5f \n",$1, $2, $3}' >> Up_mix
+
+} done < NEU_mjd_mix
+
+rm NEU_mjd_mix
+
+echo "Done"
+
+
+

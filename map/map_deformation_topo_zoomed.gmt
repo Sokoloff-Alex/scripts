@@ -1,0 +1,164 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset COLOR_FOREGROUND white 
+#gmt gmtset COLOR_BACKGROUND white
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+#R=-R-6/18/41/52.6
+#J=-Jm0.43i
+#B=-Ba4g4f1/a2g2f1
+R=-R1/18/42/50
+J=-Jm0.62i
+B=-Ba2g4f1/a1g2f1
+
+x_min=1;
+y_max=50;
+
+gmt psbasemap $R $J $B -K -X0.7i -Y0.5i  > Alpen_map.ps
+
+gmt grdimage $R $J $B Europe.grd -IEurope_gradient.grd -CEurope.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast $R $J $B -Dh -W0.5 -I1/0.25p,darkblue -A50  -N1  -K -O >> Alpen_map.ps
+#gmt pscoast $R $J $B  -Dh -G240 -W0.5  -S222/233/241 -I2 -N1  -K -O >> Alpen_map.ps
+
+gmt psxy -J -R BirdModell/PB2002_orogen_Alps.txt    -W0.5p,red -Sf0.25/3p   -K -O >> Alpen_map.ps 
+#gmt psxy -J -R Adriatics_boundary.txt               -W0.5p,red,-   -K -O >> Alpen_map.ps 
+
+scale=200i;
+
+## DRAW faults http://diss.rm.ingv.it/share-edsf/SHARE_WP3.2_Database.html
+# draw subduction PLN
+#gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t50   -K -O >> Alpen_map.ps 
+# draw Faults TOP
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,gray40   -K -O >> Alpen_map.ps 
+
+#gmt pscoast $R $J $B  -Di -G240 -W0.5  -S222/233/241 -I2 -N1  -K -O >> Alpen_map.ps 
+
+
+
+# stations
+#gmt psxy $R $J Map_auxiliary/AUSTRIA.selected.d      -St0.2  -G000/050/025 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALPEN.selected.d        -St0.2  -G250/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/FREDNET.selected.d      -St0.2  -G000/150/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/RENAG.selected.d        -St0.2  -G200/100/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/GREF.d                  -St0.2  -G000/100/200 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/IGS.d	    	      -St0.5  -G128/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/EPN.d           	      -St0.5  -G050/000/250 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/VERNAGT.d    	      -St0.2  -G250/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/IGB08_R.d    	      -Sc0.5  -G050/250/250 -K -O  >> Alpen_map.ps
+
+# show FIXED stations
+#gmt psxy $R $J Map_auxiliary/EPN_cnstr.d       	      -St0.5  -G150/000/250 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ref_sites.d       	      -Sc0.3  -Glightgreen -K -O  >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+# Add velocity vectors
+
+#echo "flag:$flag:"
+if [[ $flag == "-h" ]]
+then
+	solution_text="Hor" 
+#	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr$scale/0.99/0       -Gmagenta   -W0.4,magenta       -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr$scale/1/5p         -Gred   -W1,red         -K -O  >> Alpen_map.ps;
+
+elif [[ $flag == "-v" ]]
+then
+	solution_text="Vert"  
+#	gmt psvelo $R $J -h0 Velocity_field_vertical_Uplift.txt        -Sr$scale/0.99/0       -Gdarkgreen -W0.4,forestgreen   -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h0 Velocity_field_vertical_Uplift.txt        -Sr$scale/1/5p         -Gdarkgreen -W1,darkgreen       -K -O  >> Alpen_map.ps;
+#	gmt psvelo $R $J -h0 Velocity_field_vertical_subduction.txt    -Sr$scale/0.99/0       -Gred       -W0.4,lightred      -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h0 Velocity_field_vertical_subduction.txt    -Sr$scale/1/5p         -Gred       -W1,red             -K -O  >> Alpen_map.ps;
+else
+	solution_text="Hor_&_Vert" 
+#	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr$scale/0.99/0       -Gmagenta   -W0.4,magenta       -K -O  >> Alpen_map.ps;
+#	gmt psvelo $R $J -h0 Velocity_field_vertical_Uplift.txt        -Sr$scale/0.99/0       -Gdarkgreen -W0.4,forestgreen   -K -O  >> Alpen_map.ps;
+#	gmt psvelo $R $J -h0 Velocity_field_vertical_subduction.txt    -Sr$scale/0.99/0       -Gred       -W0.4,lightred      -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal.txt             -Sr$scale/1/5p         -Gmagenta   -W1,magenta         -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h0 Velocity_field_vertical_Uplift.txt        -Sr$scale/1/0          -Gdarkgreen -W1,darkgreen       -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h0 Velocity_field_vertical_subduction.txt    -Sr$scale/1/0          -Gred       -W1,red             -K -O  >> Alpen_map.ps;
+	#gmt psvelo $R $J -h1 Velocity_field_vertical.txt              -Sr$scale/0.99/5p      -Gred       -W1,red             -K -O  >> Alpen_map.ps
+fi
+
+# plot Outliers
+gmt psvelo $R $J -h2 Deformation/Outliers_Deformation.txt            -Sr$scale/1/5p    -Ggray        -W1,gray          -K -O  >> Alpen_map.ps;
+
+
+# Plot deformation (interpolated by LSC velocities) field
+#gmt psvelo $R $J -h2 Deformation/Deformation.txt             -Sr$scale/0.99/0  -A+e+g-   -Gblue      -W0.4,blue          -K -O  >> Alpen_map.ps;
+#gmt psvelo $R $J -h2 Deformation/Alps_deformation_0.25x0.25_no_correlaion_3.txt            -Sr$scale/0.99/0  -A+e+g-   -Gblue      -W0.4,blue          -K -O  >> Alpen_map.ps;
+
+gmt gmtselect -h2 Deformation/Alps_deformation_0.25x0.25_no_correlaion_3.txt -Di -A50 -Ns/k > Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt
+gmt psvelo $R $J      Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt  -Sr$scale/0.99/0  -A+e+g-   -Gblue      -W0.4,blue          -K -O  >> Alpen_map.ps;
+
+
+#gmt pstext Map_auxiliary/AUSTRIA.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ALPEN.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/FREDNET.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/RENAG.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/GREF.d             -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/IGS.d 	    	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/EPN.d 	     	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/VERNAGT.d    	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+
+Frame=$(more Velocity_field_info.txt)
+
+#Add LEGEND
+#echo "$(echo $x_min +1 | bc) $(echo $y_max -0.4 | bc)  GNSS stations at Alpen region" > text.txt
+#gmt pstext text.txt $R $J  -F+f20p,Helvetica+jLB    -K -O >> Alpen_map.ps
+#echo "$(echo $x_min +1 | bc) $(echo $y_max -0.8 | bc)  Horizontal and Vertical velocities, $Frame.  " > text.txt
+#gmt pstext text.txt $R $J  -F+f15p,Helvetica+jLB    -K -O >> Alpen_map.ps
+#echo "$(echo $x_min +1 | bc) $(echo $y_max -1.1 | bc)  $SolutionName" > text.txt
+#gmt pstext text.txt $R $J  -F+f10p,Helvetica+jLB    -K -O >> Alpen_map.ps
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0i/7.12i/2.5i/1.25i/TL  -O -K << EOF >> Alpen_map.ps
+# Legend test for pslegend
+# G is vertical gap, V is vertical line, N sets # of columns, D draws horizontal line.
+# H is header, L is label, S is symbol, T is paragraph text, M is map scale.
+#
+#G 0.25i
+H 20 Times-Roman Velocity field map
+G 0.05i
+EOF
+
+#echo "$(echo $x_min +0.8 | bc) 42.1	0.000  -0.002  -2mmPerYear" > symb.txt
+#gmt psvelo $R $J -h0  symb.txt  -Se$scale/1/1  -Gred -W1,red    -K -O >> Alpen_map.ps
+#echo "$(echo $x_min +0.5 | bc) 41.6	0.000	0.002 	2mmPerYear" > symb.txt
+#gmt psvelo $R $J -h0  symb.txt  -Se$scale/1/1  -G000/100/000 -W1,000/100/000    -K -O >> Alpen_map.ps
+
+#echo "$(echo $x_min +1.4 | bc)   41.9  2 mm/yr, Vertical" > text.txt
+#gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+
+echo "$(echo $x_min +0.5 | bc)   49.35	0.002	0.000 	2mmPerYear" > symb.txt
+gmt psvelo $R $J -h0  symb.txt  -Se$scale/1/1  -Gred -W1,red    -K -O >> Alpen_map.ps
+echo "$(echo $x_min +1.4 | bc)   49.30  2 mm/yr, Horizontal" > text.txt
+gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+echo "$(echo $x_min +0.5 | bc)   49.0	0.002	0.000 	2mmPerYear" > symb.txt
+gmt psvelo $R $J -h0  symb.txt  -Se$scale/1/1 -A+e+g-   -Gblue      -W0.4,blue    -K -O >> Alpen_map.ps
+echo "$(echo $x_min +1.4 | bc)   48.9  2 mm/yr, Interpolated" > text.txt
+gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+
+rm symb.txt
+rm text.txt
+
+# Elevation
+gmt psscale -CEurope.cpt -Dx8c/1.2c+w8c/0.25c+jTC+h -Bxaf -By+lkm -O -K  >> Alpen_map.ps
+
+
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+
+mv Alpen_map.pdf Results/Deformation.pdf
+evince Results/Deformation.pdf &
+
+
+

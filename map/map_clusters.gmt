@@ -1,0 +1,101 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+# bash splitClusters 
+
+R=-R-5/17.4/41.8/52.5
+J=-Jm0.45i
+B=-Ba4f1/a2f1
+
+gmt psbasemap $R $J $B  -X1.5c -Y1.5c  -K > Alpen_map.ps
+gmt pscoast   $R $J $B  -Di -G240 -W0.5 -A50 -S222/233/241  -N1 -K -O >> Alpen_map.ps
+
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_1.d      -Sc0.5 -G152/076/000  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_2.d      -Sc0.5 -G000/150/000  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_3.d      -Sc0.5 -G244/109/067  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_4.d      -Sc0.5 -G171/221/164  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_5.d      -Sc0.5 -G213/062/079  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_6.d      -Sc0.5 -G102/194/165  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_7.d      -Sc0.5 -G253/174/097  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_8.d      -Sc0.5 -G050/136/189  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_9.d      -Sc0.5 -G158/001/066  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_10.d     -Sc0.5 -G094/079/162  -K -O  >> Alpen_map.ps
+
+echo "10   50   1"  | gmt pstext $R $J -F+f24p,Helvetica,152/076/000 -O -K >> Alpen_map.ps
+echo "15   47.5 2"  | gmt pstext $R $J -F+f24p,Helvetica,000/150/000 -O -K >> Alpen_map.ps
+echo "13.0 45.2 3"  | gmt pstext $R $J -F+f24p,Helvetica,244/109/067 -O -K >> Alpen_map.ps
+echo "12   44   4"  | gmt pstext $R $J -F+f24p,Helvetica,171/221/164 -O -K >> Alpen_map.ps
+echo " 5   42.9 5"  | gmt pstext $R $J -F+f24p,Helvetica,213/062/079 -O -K >> Alpen_map.ps
+echo " 2   44.3 6"  | gmt pstext $R $J -F+f24p,Helvetica,102/194/165 -O -K >> Alpen_map.ps
+echo " 3   46.5 7"  | gmt pstext $R $J -F+f24p,Helvetica,253/174/097 -O -K >> Alpen_map.ps
+echo " 6.5 48.2 8"  | gmt pstext $R $J -F+f24p,Helvetica,050/136/189 -O -K >> Alpen_map.ps
+echo " 5   45   9"  | gmt pstext $R $J -F+f24p,Helvetica,158/001/066 -O -K >> Alpen_map.ps
+echo " 9   46.6 10" | gmt pstext $R $J -F+f24p,Helvetica,094/079/162 -O -K >> Alpen_map.ps
+
+#gmt psxy $R $J Map_auxiliary/AUSTRIA.selected.d      -St0.4  -G000/050/025 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALPEN.selected.d        -St0.4  -G250/050/050 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/FREDNET.selected.d      -St0.4  -G000/150/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/RENAG.selected.d        -St0.4  -G200/100/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ORPHEON.d               -St0.4  -G000/100/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/GREF.d                  -St0.4  -G000/150/150 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/IGS.d	             -St0.4  -G128/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/EPN.d                   -St0.4  -G050/000/250 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/DGFI.d                  -St0.4  -G050/150/250 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/VERNAGT.d               -St0.4  -G150/150/000 -K -O  >> Alpen_map.ps
+
+
+#gmt pstext Map_auxiliary/AUSTRIA.selected.d -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ALPEN.selected.d   -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/FREDNET.selected.d -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/RENAG.selected.d   -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ORPHEON.d          -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/GREF.d             -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/IGS.d 	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/EPN.d 	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/DGFI.d     	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/VERNAGT.d          -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+
+#gmt pstext $R $J Map_auxiliary/names.d -F+f6p,Helvetica -D0.5/0  -K -O >> Alpen_map.ps
+#gmt psvelo $R $J names2.d -Se1/1/5p         -Gblack   -W1,black   -K -O >> Alpen_map.ps
+
+gmt gmtset FONT_ANNOT_PRIMARY=10
+gmt pslegend $R $J -F+gazure1+pblack -Dx0i/0i/2.2i/1.3i/BL   -O -K << EOF >> Alpen_map.ps
+H 14 Helvetica Clusters
+#D 0.2i 1p
+#V 0 1p
+#N 2
+#S 0.1i t 0.15i 000/050/025 0.4p 0.3i Austria
+#S 0.1i t 0.15i 250/050/050 0.4p 0.3i Alpen
+#S 0.1i t 0.15i 000/150/000 0.4p 0.3i FredNet
+#S 0.1i t 0.15i 200/100/000 0.4p 0.3i RENAG
+#S 0.1i t 0.15i 000/100/000 0.4p 0.3i ORPHEON
+#S 0.1i t 0.15i 000/150/150 0.4p 0.3i GREF
+#S 0.1i t 0.15i 128/000/000 0.4p 0.3i IGS
+#S 0.1i t 0.15i 050/000/250 0.4p 0.3i EPN
+#S 0.1i t 0.15i 050/100/250 0.4p 0.3i DGFI
+#S 0.1i t 0.15i 150/150/000 0.4p 0.3i KEG
+V 0 1p
+D 0.2i 1p
+N 2
+S 0.1i c 0.15i 152/076/000 0.6 0.3i Cluster 1
+S 0.1i c 0.15i 000/150/000 0.6 0.3i Cluster 2
+S 0.1i c 0.15i 213/062/079 0.6 0.3i Cluster 3
+S 0.1i c 0.15i 171/221/164 0.6 0.3i Cluster 4
+S 0.1i c 0.15i 244/109/067 0.6 0.3i Cluster 5
+S 0.1i c 0.15i 102/194/165 0.6 0.3i Cluster 6
+S 0.1i c 0.15i 253/174/097 0.6 0.3i Cluster 7
+S 0.1i c 0.15i 050/136/189 0.6 0.3i Cluster 8
+S 0.1i c 0.15i 158/001/066 0.6 0.3i Cluster 9
+S 0.1i c 0.15i 094/079/162 0.6 0.3i Cluster 10
+EOF
+
+
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+mv Alpen_map.pdf Results/Alpen_map_clusters.pdf
+convert -density 100 Results/Alpen_map_clusters.pdf Results/Alpen_map_clusters.png
+
+evince Results/Alpen_map_clusters.pdf &
+eog    Results/Alpen_map_clusters.png &
+
+

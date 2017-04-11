@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# Pasre *.OUT file and prepare Velocity files with RMS
+#
+
+inputfile=$1
+
+grep 'ESTIM\|HELMR' $inputfile | cut -c7-20 | sort | uniq > list
+num=$(cat list | wc -l)
+num2=$(echo "$num*16" | bc)
+
+grep --after-context=$num2 'ellipse' $inputfile > q
+
+grep --after-context=7 -f  list q | grep ' E ' | awk '{print $3}' > Long_est
+grep --after-context=7 -f  list q | grep ' N ' | awk '{print $3}' > Lat_est
+grep --after-context=7 -f  list q | grep ' VN ' | awk '{print $3, $8, $9}' > vN_rms_N_A
+grep --after-context=7 -f  list q | grep ' VE ' | awk '{print $3, $8}' > vE_rmsE
+
+grep -f  list q | cut -c2-15 | sort | uniq > names
+
+
+echo "Derived from $inputfile" > Vel_EN.txt
+echo '# Long [deg],  Lat [deg],  vE [m/yr], vN [m/yr],  rmsE [m],  rmsN [m], Angle [deg], SITE Number' >> Vel_EN.txt
+paste Long_est Lat_est vE_rmsE vN_rms_N_A names | awk '{printf "%12.7f %12.7f %10.5f %10.5f %10.5f %10.5f %7.1f       %4s %-10s \n", $1, $2, $3, $5, $4, $6, $7, $8, $9}' >> Vel_EN.txt
+ 
+gedit Vel_EN.txt &
+
+
+

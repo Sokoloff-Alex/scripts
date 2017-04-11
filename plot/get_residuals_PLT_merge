@@ -1,0 +1,25 @@
+#!/bin/bash
+
+SITES_listfile=$1
+inputFile=$2
+
+while read SITE 
+do {
+	grep "$SITE" $inputFile >> SITE.CRD_mix
+} done < Artificial_SITES/$SITES_listfile
+
+more SITE.CRD_mix | grep ' 1  ' | cut --characters=37-41 > mjd_table.txt
+grep -f mjd_table.txt time_table.txt | cut --characters=-10 > time.txt
+more SITE.CRD_mix | awk '{if ($4 == 1) printf"%10.5f  %10.5f \n", $5*1000, $7*1000}' > North.txt
+more SITE.CRD_mix | awk '{if ($4 == 2) printf"%10.5f  %10.5f \n", $5*1000, $7*1000}' > East.txt
+more SITE.CRD_mix | awk '{if ($4 == 3) printf"%10.5f  %10.5f \n", $5*1000, $7*1000}' > Up.txt
+
+paste time.txt North.txt > North
+paste time.txt East.txt  > East
+paste time.txt Up.txt    > Up
+
+rm SITE.CRD_mix
+rm North.txt
+rm East.txt
+rm Up.txt
+rm time.txt

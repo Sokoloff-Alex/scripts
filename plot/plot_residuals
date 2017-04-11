@@ -1,0 +1,140 @@
+#!/bin/bash
+# plot Resudials for specified site
+
+SITE="$1"
+echo "Plot resudial for $SITE" 
+
+grep "$SITE " ALP_NET.STA | tail -n +2 | awk '{printf"%4s-%2s-%2s\n%4s-%2s-%2s\n", $4, $5, $6, $10, $11, $12}' | sort | uniq > Site_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-120 | uniq --skip-chars=42 | awk '{printf"%4s-%2s-%2s\n%4s-%2s-%2s\n", $1, $2, $3, $7, $8, $9}' | uniq > Receiver_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-202 | uniq --skip-chars=94 | awk '{printf"%4s-%2s-%2s\n%4s-%2s-%2s\n", $1, $2, $3, $7, $8, $9}' | uniq > Ant_Radom_changes
+
+bash get_coordinates_CRD_HLM $SITE
+
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $5}'  > dX
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $6}'  > dY
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $7}'  > dZ
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $8}'  > North
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $9}'  > East
+#more CRD/"$SITE".CRD | awk '{printf "%10s %7.2f\n", $1, $10}' > Up
+
+fileName="$SITE"_plot
+ps=$fileName.ps
+echo $fileName
+
+################# Plot Translation of SITE ##############################
+
+R=-R2003-12-01T/2014-02-01T/-200/200
+J=-Jx0.00686/0.02
+
+#GMT psbasemap $R $J -Bsf01oa01Y/ -Bpa3o/g50f2a10  -K > $ps
+GMT psbasemap -R2003-12-01T/2014-02-01T/-200/200 $J -Bf01oa01Y:"Time":/g200f5a50:"Translation, [mm]":WESn  -K > $ps
+
+while read line
+do {
+	echo "$line   -200" > newLine
+	echo "$line    200" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -200" > newLine
+	echo "$line    200" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+GMT psxy $R $J dX  -W5/000/050/025 -K -O >> $ps
+GMT psxy $R $J dY  -W5/120/100/125 -K -O >> $ps
+GMT psxy $R $J dZ  -W5/200/050/025 -K -O >> $ps
+
+
+cat << EOF |GMT pslegend $R $J -Dx0.2i/3i/3.5i/3i/TL  -O -K >> $ps
+H 12 Helvetica $SITE Translation wrt epoch 2005-01-01
+S 0.1i r 0.2i 000/050/025  0.25p 0.3i dX
+S 0.1i r 0.2i 120/100/125  0.25p 0.3i dY
+S 0.1i r 0.2i 200/050/025  0.25p 0.3i dZ
+EOF
+
+
+echo "2004-03-01 10" > newLine
+echo "2004-03-01 70" >> newLine
+GMT psxy -R2003-12-01T/2014-02-01T/-400/50 $J newLine -W20/250/100/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2014-02-01T/-400/50 $J -O -K << EOF >> $ps
+2004-04-01 25 10 0 0 0 Antenna / Radom change
+EOF
+
+echo "2006-06-01 10" > newLine
+echo "2006-06-01 70" >> newLine
+GMT psxy -R2003-12-01T/2014-02-01T/-400/50 $J newLine -W5/100/250/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2014-02-01T/-400/50 $J -O -K << EOF >> $ps
+2006-07-01 25 10 0 0 0 Receiver change
+EOF
+
+######################## Resudials subplot ##############################
+R=-R2003-12-01T/2014-02-01T/-40/40
+J=-Jx0.00686/0.1
+
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f2a10:"Resudials, [mm]":WESn  -O -K -Y4i  >> $ps
+
+while read line
+do {
+	echo "$line   -200" > newLine
+	echo "$line    200" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -200" > newLine
+	echo "$line    200" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+
+echo "2003-12-01 10" > newLine
+echo "2014-02-01 10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -10" > newLine
+echo "2014-02-01 -10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+GMT psxy $R $J North   -W5/000/050/025 -K -O >> $ps
+GMT psxy $R $J East    -W5/120/100/125 -K -O >> $ps
+GMT psxy $R $J Up      -W5/200/050/025 -K -O >> $ps
+
+cat << EOF |GMT pslegend $R $J -Dx0.2i/3i/1.75i/3i/TL  -O -K >> $ps
+H 12 Helvetica $SITE Resudials
+S 0.1i r 0.2i 000/050/025  0.25p 0.3i North
+S 0.1i r 0.2i 120/100/125  0.25p 0.3i East
+S 0.1i r 0.2i 200/050/025  0.25p 0.3i Up
+EOF
+
+
+
+
+
+
+###########################################################################
+
+ps2pdf $ps Plots_pdf/$fileName.pdf
+evince Plots_pdf/$fileName.pdf &
+#convert $fileName.pdf $fileName.png
+#eog $fileName.png &
+#psresize -pA4 -pA3 $fileName.pdf "$fileName"_A3.pdf
+rm $fileName.ps
+
+rm Site_changes
+rm Receiver_changes
+rm Ant_Radom_changes
+rm newLine
+rm d?
+rm North
+rm East
+rm Up
+
+echo 'DONE'
+
+
+

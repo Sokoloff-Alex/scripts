@@ -1,0 +1,83 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+# bash splitClusters 
+
+R=-R-5/17.4/41.8/52.5
+J=-Jm0.45i
+B=-Ba4f1/a2f1
+
+inputFile=$1
+year=$2
+
+
+gmt psbasemap $R $J $B  -X1.5c -Y1.5c  -K > Alpen_map.ps
+gmt pscoast   $R $J $B  -Di -G240 -W0.5 -A50 -S222/233/241  -N1 -K -O >> Alpen_map.ps
+
+grep "$year"D.Z $1 | cut -c1-4 | sort | uniq --count | grep "[A-Z]" | sort -k2 > Map_auxiliary/availability/statistics_$year
+cat Map_auxiliary/availability/statistics_$year | awk '{printf "%s\n", tolower($2)}' | sort | grep "[a-z]" > Map_auxiliary/availability/list_$year
+grep --ignore-case -w -f Map_auxiliary/availability/list_$year Map_auxiliary/names.d | sort -k3 | awk '{printf "%10.6f %10.6f   %4s \n", $1, $2, $3}' | uniq --skip-chars=24  > Map_auxiliary/availability/names_$year.d
+
+paste Map_auxiliary/availability/names_$year.d Map_auxiliary/availability/statistics_$year | awk '{printf "%10.6f %10.6f %3d %4s \n", $1, $2, $4, $3}' > Map_auxiliary/availability/availability_rnx_$year.d
+
+gmt psxy $R $J Map_auxiliary/availability/availability_rnx_$year.d -Sc0.4c -CRedGreen_365.cpt -K -O  >> Alpen_map.ps
+
+
+
+gmt psxy $R $J Map_auxiliary/AUSTRIA.selected.d      -St0.3  -G000/050/025 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ALPEN.selected.d        -St0.3  -G250/050/050 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/FREDNET.selected.d      -St0.3  -G000/150/000 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/RENAG.selected.d        -St0.3  -G200/100/000 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/ORPHEON.d               -St0.3  -G000/100/000 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/GREF.d                  -St0.3  -G000/150/150 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/IGS.d	                 -St0.3  -G128/000/000 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/EPN.d                   -St0.3  -G050/000/250 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/DGFI.d                  -St0.3  -G050/150/250 -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/VERNAGT.d               -St0.3  -G150/150/000 -K -O  >> Alpen_map.ps
+
+
+#gmt pstext Map_auxiliary/AUSTRIA.selected.d -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ALPEN.selected.d   -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/FREDNET.selected.d -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/RENAG.selected.d   -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ORPHEON.d          -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/GREF.d             -F+f6p,Helvetica	-D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/IGS.d 	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/EPN.d 	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/DGFI.d     	     -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/VERNAGT.d          -F+f6p,Helvetica    -D0.5/0 $R $J    -K -O  >> Alpen_map.ps
+
+gmt pstext $R $J Map_auxiliary/names.d -F+f6p,Helvetica -D0.5/0  -K -O >> Alpen_map.ps
+#gmt psvelo $R $J names2.d -Se1/1/5p         -Gblack   -W1,black   -K -O >> Alpen_map.ps
+
+echo "-2 52 Datapool availability for year 20$year" | gmt pstext  $R $J -F+f12p,Helvetica  -K -O >> Alpen_map.ps
+
+# Strain Scale backgroung (Eps1 + Eps2)
+gmt psscale -CRedGreen_365.cpt -Dx10c/1c+w4.5c/0.2c+jBL+h -Bxaf  -By+l[days] -O -K  >> Alpen_map.ps
+
+
+gmt gmtset FONT_ANNOT_PRIMARY=10
+gmt pslegend $R $J -F+gazure1+pblack -Dx0i/0i/2.2i/1.3i/BL   -O -K << EOF >> Alpen_map.ps
+H 14 Helvetica GNSS networks
+D 0.2i 1p
+V 0 1p
+N 2
+S 0.1i t 0.15i 000/050/025 0.4p 0.3i Austria
+S 0.1i t 0.15i 250/050/050 0.4p 0.3i Alpen
+S 0.1i t 0.15i 000/150/000 0.4p 0.3i FredNet
+S 0.1i t 0.15i 200/100/000 0.4p 0.3i RENAG
+S 0.1i t 0.15i 000/100/000 0.4p 0.3i ORPHEON
+S 0.1i t 0.15i 000/150/150 0.4p 0.3i GREF
+S 0.1i t 0.15i 128/000/000 0.4p 0.3i IGS
+S 0.1i t 0.15i 050/000/250 0.4p 0.3i EPN
+S 0.1i t 0.15i 050/100/250 0.4p 0.3i DGFI
+S 0.1i t 0.15i 150/150/000 0.4p 0.3i KEG
+EOF
+
+ps2pdf Alpen_map.ps Results/Alpen_map_availability_"$year".pdf
+#convert -quality 100 Results/Alpen_map_availability_"$year".pdf Results/Alpen_map_availability_"$year".png
+
+evince Results/Alpen_map_availability_"$year".pdf &
+#eog    Results/Alpen_map_availability_"$year".png &
+
+

@@ -1,0 +1,117 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+
+R=-R3/11/42.7/47.5
+#J=-Jm0.62i
+J=-Jm0.5i
+B=-Ba1f1/a1f1
+scale=350i;
+
+gmt set MAP_FRAME_TYPE plain 
+gmt set FONT_ANNOT_PRIMARY 6p,Helvetica,black
+
+##### for Western Alps ##############
+
+gmt psbasemap $R $J $B -P -X1i -Y1i -K > Alpen_map.ps
+
+#grdgradient Europe.grd -A0/270 -Ne0.1 -V -GEurope_grad2.grd=nb/a
+grdgradient Europe.grd -A-45/-135 -Ne0.12 -V -GEurope_grad3.grd=nb/a
+
+#gmt grdimage $R $J $B Europe.grd -IEurope_gradient.grd  -Ctopo_tectonics3.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J $B Europe.grd -IEurope_grad3.grd  -Ctopo_tectonics3.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast  $R $J $B -Di -A400 -W0.25   -N1 -S222/233/241  -K -O >> Alpen_map.ps
+#gmt pscoast  $R $J $B -Di -A400 -W0.5   -N1   -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.15c -Ggray50 -K -O  >>  Alpen_map.ps 
+
+## DRAW faults http://diss.rm.ingv.it/share-edsf/SHARE_WP3.2_Database.html
+# draw subduction PLN
+#gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50  -t50  -K -O >> Alpen_map.ps 
+# draw Faults TOP
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.5p,gray30   -K -O >> Alpen_map.ps 
+
+
+# Add velocity vectors
+#gmt psvelo $R $J -h1 Velocity_field_horizontal.txt  -Sr$scale/0.99/0 -Gred   -W0.4,red -K -O >> Alpen_map.ps;
+gmt psvelo $R $J -h1 Velocity_field_horizontal.txt  -Sr$scale/1/5p   -Gred   -W0.5,red   -K -O >> Alpen_map.ps;
+
+#add outliers
+grep -f VelocityField/list_outliers VelocityField/VelocityField_hor_Cov_SNX_all.txt >>  VelocityField/VelocityField_hor_Outliers.txt
+gmt psvelo $R $J VelocityField/VelocityField_hor_Outliers.txt -Se$scale/0/0p    -Gorange   -W0.5,orange   -K -O >> Alpen_map.ps;
+
+gmt gmtselect    -h2 Deformation/Alps_deformation_0.25x0.25_no_correlaion_3.txt -Di -A400  -Ns/k > Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt
+gmt psvelo   $R $J   Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt  -Sr$scale/0.99/0  -A+e+g-   -Gblue      -W0.25,blue     -K -O  >> Alpen_map.ps;
+#gmt psvelo   $R $J   Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt  -Sr$scale/0.99/0     -Gblue      -W1,blue          -K -O  >> Alpen_map.ps;
+
+#gmt pslegend $R $J -F+gazure1+pblack -Dx8.8c/0c/3c/1.7c/BR  -O -K << EOF >> Alpen_map.ps
+#EOF
+
+echo "7.7 43.45	0.001	0.000 	2mmPerYear" | gmt psvelo $R $J -Se$scale/1/1  -Gred    -W0.50,red           -K -O >> Alpen_map.ps
+echo "7.7 43.25	0.001	0.000 	2mmPerYear" | gmt psvelo $R $J -Se$scale/1/1  -Gblue   -W0.25,blue -A+e+g-  -K -O >> Alpen_map.ps
+echo "7.7 43.05	0.001	0.000 	2mmPerYear" | gmt psvelo $R $J -Se$scale/1/1  -Gorange -W0.50,orange        -K -O >> Alpen_map.ps
+echo "8.0 42.85	" | gmt psxy $R $J -Sc0.15c -Ggray50 -K -O  >>  Alpen_map.ps 
+
+
+echo "7.7 43.55 1 mm/a"           | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "8.7 43.4 Observed"          | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "8.7 43.2 Interpolated"      | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "8.7 43.0 Outlier"           | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "8.7 42.80 Station"          | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+
+
+##### add Eastern Alps ##############
+
+R=-R8/17/45/48.7
+#J=-Jm0.62i
+J=-Jm0.5i
+B=-Ba1f1/a1f1
+scale=200i;
+
+gmt psbasemap $R $J $B -P -X0i -Y10c -K -O >> Alpen_map.ps
+
+#grdgradient Europe.grd -A0/270 -Ne0.1 -V -GEurope_grad2.grd=nb/a
+
+#gmt grdimage $R $J $B Europe.grd -IEurope_gradient.grd  -Ctopo_tectonics3.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J $B Europe.grd -IEurope_grad2.grd  -Ctopo_tectonics3.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast  $R $J $B -Di -A400 -W0.25   -N1 -S222/233/241  -K -O >> Alpen_map.ps
+#gmt pscoast  $R $J $B -Di -A400 -W0.5   -N1   -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.15c -Ggray50 -K -O  >>  Alpen_map.ps 
+
+## DRAW faults http://diss.rm.ingv.it/share-edsf/SHARE_WP3.2_Database.html
+# draw subduction PLN
+#gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50  -t50  -K -O >> Alpen_map.ps 
+# draw Faults TOP
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.5p,gray30   -K -O >> Alpen_map.ps 
+
+
+# Add velocity vectors
+#gmt psvelo $R $J -h1 Velocity_field_horizontal.txt  -Sr$scale/0.99/0 -Gred   -W0.4,red -K -O >> Alpen_map.ps;
+gmt psvelo $R $J -h1 Velocity_field_horizontal.txt  -Sr$scale/1/5p   -Gred   -W0.7,red   -K -O >> Alpen_map.ps;
+
+gmt gmtselect    -h2 Deformation/Alps_deformation_0.25x0.25_no_correlaion_3.txt -Di -A400  -Ns/k > Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt
+gmt psvelo   $R $J   Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt  -Sr$scale/0.99/0  -A+e+g-   -Gblue      -W0.25,blue     -K -O  >> Alpen_map.ps;
+#gmt psvelo   $R $J   Deformation/Alps_deformation_0.25x0.25_no_correlaion_3_dry.txt  -Sr$scale/0.99/0     -Gblue      -W1,blue          -K -O  >> Alpen_map.ps;
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx11.43c/0c/3.2c/1.2c/BR  -O -K << EOF >> Alpen_map.ps
+EOF
+echo "14.75 45.35	0.002	0.000 	2mmPerYear" | gmt psvelo $R $J -Se$scale/1/1  -Gred  -W0.70,red           -K -O >> Alpen_map.ps
+echo "14.75 45.15	0.002	0.000 	2mmPerYear" | gmt psvelo $R $J -Se$scale/1/1  -Gblue -W0.25,blue -A+e+g-  -K -O >> Alpen_map.ps
+
+echo "14.75 45.42 2 mm/yr"           | gmt pstext $R $J -F+f6p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "15.8 45.3 Observed"          | gmt pstext $R $J -F+f7p,Helvetica+jLB  -K -O >> Alpen_map.ps
+echo "15.8 45.1 Interpolated"      | gmt pstext $R $J -F+f7p,Helvetica+jLB  -K -O >> Alpen_map.ps
+
+
+ps2pdf Alpen_map.ps  Results/Deformation_horizontal_Regions.pdf
+convert -quality 100 -density 150 Results/Deformation_horizontal_Regions.pdf Results/Deformation_horizontal_Regions.png
+
+evince Results/Deformation_horizontal_Regions.pdf &
+#eog    Results/Deformation_horizontal_Regions.png &
+
+

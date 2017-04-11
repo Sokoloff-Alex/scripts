@@ -1,0 +1,103 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+# Draw map of velocity field from different references IGS/IGB/EPN
+
+flag=$1
+flag2=$2
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset COLOR_FOREGROUND white 
+#gmt gmtset COLOR_BACKGROUND white
+#gmt gmtset PS_PAGE_COLOR 254/254/254
+
+R=-R-6/18/41/52.6
+J=-Jm0.3i
+B=-Ba4f1/a2f1
+
+gmt set MAP_FRAME_TYPE fancy 
+gmt set FONT_ANNOT_PRIMARY 8p,Helvetica,black
+
+Scale_Arrow='500i'
+
+gmt psbasemap $R $J $B -K -X0.7i -Y0.5i -P  > Alpen_map.ps
+
+#gmt grdimage $R $J $B Europe.grd -IEurope_gradient.grd -CEurope.cpt -K -O >> Alpen_map.ps 
+gmt pscoast $R $J $B -Di -A1000 -W0.5 -S222/233/241  -N1  -K -O >> Alpen_map.ps
+
+#gmt pscoast $R $J $B  -Di -G240 -W0.5  -S222/233/241 -I2 -N1  -K -O >> Alpen_map.ps 
+
+
+# Add velocity vectors
+
+## EPN, from  EPN_A_IGb08_C1890.SNX
+#get_vector_field ./EPN_1890_SNX 
+#mv Velocity_field_vertical.txt Velocity_field_vertical_EPN_1890.txt
+#get_vector_field ./EPN_1890_SNX -e
+#mv Velocity_field_horizontal.txt Velocity_field_horizontal_EPN_1890.txt
+
+## IGS, from IGS.SNX
+#get_vector_field ./IGS_ALP_SNX 
+#mv Velocity_field_vertical.txt Velocity_field_vertical_IGS.txt
+#get_vector_field ./IGS_ALP_SNX -e 
+#mv Velocity_field_horizontal.txt Velocity_field_horizontal_IGS.txt
+
+## IGB, from IGB08.SNX
+#get_vector_field ./IGB_SNX 
+#mv Velocity_field_vertical.txt Velocity_field_vertical_IGB.txt
+#get_vector_field ./IGB_SNX -e 
+#mv Velocity_field_horizontal.txt Velocity_field_horizontal_IGB.txt
+
+
+#echo "flag:$flag:"
+if [[ $flag == "-h" ]]
+then
+	solution_text="horizontal" 
+	Frame="ETRF"
+	gmt psvelo $R $J -h1 Velocity_field_horizontal_EPN_1890.txt        -Sr$Scale_Arrow/1/5p         -Gblue      -W1,blue          -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal_IGS.txt             -Sr$Scale_Arrow/1/5p         -Gdarkgreen -W1,darkgreen     -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_horizontal_IGB.txt             -Sr$Scale_Arrow/1/5p         -Gred       -W1,red           -K -O  >> Alpen_map.ps;
+
+elif [[ $flag == "-v" ]]
+then
+	solution_text="vertical"  
+	Frame="ITRF"
+	gmt psvelo $R $J -h1 Velocity_field_vertical_IGS.txt             -Sr$Scale_Arrow/1/5p         -Gdarkgreen -W1,darkgreen       -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_EPN_1890.txt        -Sr$Scale_Arrow/1/5p         -Gblue      -W1,blue            -K -O  >> Alpen_map.ps;
+	gmt psvelo $R $J -h1 Velocity_field_vertical_IGB.txt             -Sr$Scale_Arrow/1/5p         -Gred       -W1,red             -K -O  >> Alpen_map.ps;
+fi
+
+#gmt pstext Map_auxiliary/AUSTRIA.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ALPEN.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/FREDNET.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/RENAG.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/GREF.d             -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext Map_auxiliary/IGS.d 	    	    -F+f6p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+gmt pstext EPN_names.d 	     	            -F+f6p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/VERNAGT.d    	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+
+
+gmt pslegend $R $J -F+gazure1+pblack -Dx0i/0i/4.5c/2.5c/BL  -O -K << EOF >> Alpen_map.ps
+H 10 Helvetica Velocity field map
+G 0.05i
+EOF
+
+echo "-5.5  42.3 0.001	0.000 	1mmPerYear" | gmt psvelo $R $J  -Se$Scale_Arrow/1/1  -Gblue -W1,blue    -K -O >> Alpen_map.ps
+echo "-5.5  41.8 0.001	0.000 	1mmPerYear" | gmt psvelo $R $J  -Se$Scale_Arrow/1/1  -Gdarkgreen -W1,darkgreen    -K -O >> Alpen_map.ps
+echo "-5.5  41.3 0.001	0.000 	1mmPerYear" | gmt psvelo $R $J  -Se$Scale_Arrow/1/1  -Gred -W1,red    -K -O >> Alpen_map.ps
+
+echo " -5.5 42.5   1 mm/yr " | gmt pstext  $R $J -F+f10p,Helvetica+jLB   -K -O >> Alpen_map.ps
+echo "-3.5 42.2   EPN "      | gmt pstext  $R $J -F+f10p,Helvetica+jLB   -K -O >> Alpen_map.ps
+echo "-3.5 41.7   IGS "      | gmt pstext  $R $J -F+f10p,Helvetica+jLB   -K -O >> Alpen_map.ps
+echo "-3.5 41.2   IGB "      | gmt pstext  $R $J -F+f10p,Helvetica+jLB   -K -O >> Alpen_map.ps
+
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+convert -quality 100 -density 300 -trim Alpen_map.pdf Results/Alpen_map_velocity_field_topo_compare_Ref_$solution_text.png
+
+eog Results/Alpen_map_velocity_field_topo_compare_Ref_$solution_text.png &
+mv Alpen_map.pdf Results/Alpen_map_velocity_field_topo_compare_Ref_$solution_text.pdf
+ 
+evince Results/Alpen_map_velocity_field_topo_compare_Ref_$solution_text.pdf &
+
+
+

@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Pasre *.OUT file and corrections ENU
+#
+
+inputfile=$1
+
+grep 'HELMR' $inputfile | cut -c7-10 | sort | uniq > EPN_cnstr.list
+grep -f EPN_cnstr.list Map_auxiliary/LLH_CRD_all.txt > Map_auxiliary/EPN_cnstr.d
+
+grep 'ESTIM\|HELMR' $inputfile | cut -c7-20 | sort | uniq > list
+num=$(cat list | wc -l)
+num2=$(echo "$num*16" | bc)
+
+grep --after-context=$num2 'ellipse' $inputfile > q
+
+grep --after-context=7 -f  list q | grep ' E ' | awk '{print $3}' > Long_est
+grep --after-context=7 -f  list q | grep ' N ' | awk '{print $3}' > Lat_est
+grep --after-context=7 -f  list q | grep ' N ' | awk '{print $4}' > N_corr
+grep --after-context=7 -f  list q | grep ' E ' | awk '{print $4}' > E_corr
+grep --after-context=7 -f  list q | grep ' U ' | awk '{print $4}' > U_corr
+
+grep -f  list q | cut -c2-15 | sort | uniq > names
+
+echo "# Coordinate correction, Derived from $inputfile" > Crd_EN_corr.txt
+echo "# Coordinate correction, Derived from $inputfile" > Crd_Up_corr.txt
+echo '# Long [deg],  Lat [deg],   E_corr [m], N_corr [m],   SITE Number' >> Crd_EN_corr.txt
+echo '# Long [deg],  Lat [deg],   0.0000,      U_corr [m],  SITE Number' >> Crd_Up_corr.txt
+paste Long_est Lat_est E_corr N_corr names | awk '{printf "%12.7f %12.7f   %10.5f       %10.5f       %4s %-10s \n", $1, $2, $3, $4, $5, $6}' >> Crd_EN_corr.txt
+paste Long_est Lat_est        U_corr names | awk '{printf "%12.7f %12.7f   0.0000       %10.5f       %4s %-10s \n", $1, $2, $3, $4, $5}'     >> Crd_Up_corr.txt
+
+rm Long_est Lat_est E_corr N_corr U_corr names list
+ 
+# gedit Crd_EN_corr.txt &
+# gedit Crd_Up_corr.txt &
+
+
+

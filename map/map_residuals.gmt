@@ -1,0 +1,217 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset PS_PAGE_COLOR 254/254/254
+gmt set FONT_ANNOT_PRIMARY 7p,Helvetica,black
+
+R=-R-5/17/41.8/52.5
+J=-Jm0.43i
+B=-Ba4f1/a2f1
+
+gmt psbasemap $R $J $B -K -X0.7i -Y0.5i  > Alpen_map.ps
+gmt pscoast $R $J $B  -Di -A1000 -G240 -W0.5  -S222/233/241  -N1  -K -O >> Alpen_map.ps
+gmt set FONT_ANNOT_PRIMARY 9p,Helvetica,black
+
+# clusters
+if [[ $flag2 == "-clusters" ||  $flag2 == "-clu" ||  $flag2 == "-c" ]]   # Show clusters 
+then
+	echo "show Clusters Yes" 
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_1.d      -Sc0.3 -G255/255/000  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_2.d      -Sc0.3 -G200/155/255  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_3.d      -Sc0.3 -G255/155/000  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_4.d      -Sc0.3 -G000/255/255  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_5.d      -Sc0.3 -G255/100/100  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_6.d      -Sc0.3 -G000/155/055  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_7.d      -Sc0.3 -G255/200/000  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_8.d      -Sc0.3 -G000/155/055  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_9.d      -Sc0.3 -G055/255/000  -K -O  >> Alpen_map.ps
+	gmt psxy $R $J Map_auxiliary/ALP_NET_Cluster_10.d     -Sc0.3 -G000/155/255  -K -O  >> Alpen_map.ps
+fi
+# stations
+#gmt psxy $R $J Map_auxiliary/AUSTRIA.selected.d      -St0.2  -G000/050/025 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/ALPEN.selected.d        -St0.2  -G250/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/FREDNET.selected.d      -St0.2  -G000/150/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/RENAG.selected.d        -St0.2  -G200/100/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/GREF.d                  -St0.2  -G000/100/200 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/IGS.d                   -St0.2  -G128/000/000 -K -O  >> Alpen_map.ps
+#gmt psxy $R $J Map_auxiliary/EPN.d                   -St0.2  -G050/000/250 -K -O  >> Alpen_map.ps
+
+# Add Residuals vectors
+#gmt psvelo $R $J -H1 Residuals_field_horizontal.txt             -Se200i/1/1  -Gblue -W1,blue    -K -O  >> Alpen_map.ps
+#gmt psvelo $R $J -H1 Residuals_field_vertical.txt               -Se1/1/1  -Gred -W1,red  -K -O  >> Alpen_map.ps
+
+#gmt psvelo $R $J -H1 Residuals_field_3D.txt                     -Se1i/1/1  -Gred -W1,red  -K -O  >> Alpen_map.ps
+
+#gmt psvelo $R $J -H1 Residuals_field_vertical_Uplift.txt        -Se0.1i/1/1  -G000/100/000 -W1,000/100/000  -K -O  >> Alpen_map.ps
+#gmt psvelo $R $J -H1 Residuals_field_vertical_subduction.txt    -Se0.1i/1/1  -Gred -W1,red  -K -O  >> Alpen_map.ps
+
+# Add names
+#gmt pstext Map_auxiliary/AUSTRIA.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/ALPEN.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/FREDNET.selected.d -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/RENAG.selected.d   -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/GREF.d             -F+f5p,Helvetica	-D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/IGS.d 	     	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/EPN.d 	     	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+#gmt pstext Map_auxiliary/VERNAGT.d    	    -F+f5p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+
+gmt pstext names.d    	    -F+f6p,Helvetica    -D0.4/0 $R $J    -K -O  >> Alpen_map.ps
+
+
+# chose column according to th flag: 
+# -n
+#echo "flag:$flag:"
+if [[ $flag == "-n" ||  $flag == "-north" ]]   # North 
+then
+	solution_text="North" 
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $3}' > Map_auxiliary/Residuals_component.PLT
+elif [[ $flag == "-e" ||  $flag == "-east" ]] # East
+then
+	solution_text="East" 
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $4}' > Map_auxiliary/Residuals_component.PLT
+elif [[ $flag == "-u" || $flag == "-v" ||  $flag == "-up" ||  $flag == "-vert" ]] # Up/Vert
+then 
+	solution_text="Vert"
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $5}' > Map_auxiliary/Residuals_component.PLT
+elif [[ $flag == "-h" ||  $flag == "-hor" ]] # Horizontal
+then 
+	solution_text="Hor"
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $6}' > Map_auxiliary/Residuals_component.PLT
+elif [[ $flag == "-all" ||  $flag == "-3D" || $flag == "-3d" || $flag == "-total" || $flag == "" ]] # 3D/All
+then 
+	solution_text="3D"
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $7}' > Map_auxiliary/Residuals_component.PLT
+else
+	solution_text="3D" 
+	more +num=2 Map_auxiliary/Residuals.PLT | awk '{printf"%s   %s \n", $1, $7}' > Map_auxiliary/Residuals_component.PLT
+fi
+
+#plot Residuals by categry: 0, 0-1, 1-2, 2-3, 3-4, 4-5, 5-6, 6-7, 7++ mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 7.0)             print $1}' > Map_auxiliary/list_7+_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 6.0 && $2 < 7.0) print $1}' > Map_auxiliary/list_6-7_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 5.0 && $2 < 6.0) print $1}' > Map_auxiliary/list_5-6_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 4.0 && $2 < 5.0) print $1}' > Map_auxiliary/list_4-5_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 3.0 && $2 < 4.0) print $1}' > Map_auxiliary/list_3-4_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 2.0 && $2 < 3.0) print $1}' > Map_auxiliary/list_2-3_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 1.0 && $2 < 2.0) print $1}' > Map_auxiliary/list_1-2_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 > 0.0 && $2 < 1.0) print $1}' > Map_auxiliary/list_0-1_mm
+more Map_auxiliary/Residuals_component.PLT | awk '{if ($2 = 0.0)             print $1}' > Map_auxiliary/list_0_mm
+
+grep -f Map_auxiliary/list_7+_mm  Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_7+_mm
+grep -f Map_auxiliary/list_6-7_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_6-7_mm
+grep -f Map_auxiliary/list_5-6_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_5-6_mm
+grep -f Map_auxiliary/list_4-5_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_4-5_mm
+grep -f Map_auxiliary/list_3-4_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_3-4_mm
+grep -f Map_auxiliary/list_2-3_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_2-3_mm
+grep -f Map_auxiliary/list_1-2_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $3}' > Map_auxiliary/list_crd_1-2_mm
+grep -f Map_auxiliary/list_0-1_mm Map_auxiliary/LLH_CRD_all.txt | awk '{printf "%12s  %12s   %4s \n", $1, $2, $5}' > Map_auxiliary/list_crd_0-1_mm
+
+gmt psxy $R $J Map_auxiliary/list_crd_7+_mm     -Sc0.45    -G139/0/0      -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_6-7_mm    -Sc0.40    -G255/69/0     -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_5-6_mm    -Sc0.35    -G255/140/0    -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_4-5_mm    -Sc0.30    -G128/128/0    -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_3-4_mm    -Sc0.25    -G154/205/050  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_2-3_mm    -Sc0.20    -G70/130/180   -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_1-2_mm    -Sc0.15    -G100,149,237  -K -O  >> Alpen_map.ps
+gmt psxy $R $J Map_auxiliary/list_crd_0-1_mm    -Sc0.10    -G176,224,230  -K -O  >> Alpen_map.ps
+
+
+## Caclulate statstics, mean RMS for each component
+
+meanRMS_N=$( more Map_auxiliary/Residuals.PLT | awk '{ if ($3 > 0.00) print $3}' | awk '{ sum +=$1; n++ } END { if (n > 0) printf "%6.2f", ( sum / n); }' )
+meanRMS_E=$( more Map_auxiliary/Residuals.PLT | awk '{ if ($4 > 0.00) print $4}' | awk '{ sum +=$1; n++ } END { if (n > 0) printf "%6.2f", ( sum / n); }' )
+meanRMS_U=$( more Map_auxiliary/Residuals.PLT | awk '{ if ($5 > 0.00) print $5}' | awk '{ sum +=$1; n++ } END { if (n > 0) printf "%6.2f", ( sum / n); }' )
+meanRMS_H=$( more Map_auxiliary/Residuals.PLT | awk '{ if ($6 > 0.00) print $6}' | awk '{ sum +=$1; n++ } END { if (n > 0) printf "%6.2f", ( sum / n); }' )
+meanRMS_T=$( more Map_auxiliary/Residuals.PLT | awk '{ if ($7 > 0.00) print $7}' | awk '{ sum +=$1; n++ } END { if (n > 0) printf "%6.2f", ( sum / n); }' )
+
+
+##Add LEGEND
+#echo "-5 52.10  GNSS stations at Alpen region" > text.txt
+#gmt pstext text.txt $R $J  -F+f20p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+#echo "-5 51.70  Residuals.  " > text.txt
+#gmt pstext text.txt $R $J  -F+f15p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+#echo "-5.0 51.40  $SolutionName" > text.txt
+#gmt pstext text.txt $R $J  -F+f10p,Helvetica+jLB -Gwhite   -K -O >> Alpen_map.ps
+
+
+gmt pslegend $R $J -F0.2c+gazure1+pblack -Dx0i/0i/2i/1.7i/BL  -K -O << EOF >> Alpen_map.ps
+# Legend test for pslegend
+# G is vertical gap, V is vertical line, N sets # of columns, D draws horizontal line.
+# H is header, L is label, S is symbol, T is paragraph text, M is map scale.
+#
+#G 0.1i
+V 0 1p
+H 10 Helvetica Residuals RMS, $solution_text
+G 0.05i
+D 0.2i 1p
+V 0 1p
+S 0.1i c 0.325  139/000/000   0.25p 0.3i 7+ mm
+S 0.1i c 0.3    255/069/000   0.25p 0.3i 6..7 mm
+S 0.1i c 0.275  255/140/000   0.25p 0.3i 5..6 mm
+S 0.1i c 0.25   128/128/000    0.25p 0.3i 4..5 mm
+S 0.1i c 0.2    154/205/050   0.25p 0.3i 3..4 mm
+S 0.1i c 0.175  70/130/180   0.25p 0.3i 2..3 mm
+S 0.1i c 0.15   100,149,237  0.25p 0.3i 1..2 mm
+S 0.1i c 0.125  176,224,230   0.25p 0.3i 0..1 mm
+V 0 1p
+D 0.2i 1p
+N 1
+P
+EOF
+
+gmt pslegend $R $J -F0.2c+gazure1+pblack -Dx8.1i/0i/1.3i/1.2i/BL  -O -K << EOF >> Alpen_map.ps
+T Average RMS, mm
+N 2
+G 0.25i
+T North $meanRMS_N
+G 0.15i
+T East $meanRMS_E 
+G 0.15i
+T Up $meanRMS_U 
+G 0.15i
+T Horizontal $meanRMS_H 
+G 0.15i
+T Total $meanRMS_T 
+EOF
+#echo "-5  41.6	0.000  -0.002 	   -2mmPerYear" > symb.txt
+#gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -Gred -W1,red    -K -O >> Alpen_map.ps
+#echo "-4.0 41.15  1 mm, Vertical component" > text.txt
+#gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+#
+#echo "-5.5  40.8	0.000	0.002 	2mmPerYear" > symb.txt
+##gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -G000/100/000 -W1,000/100/000    -K -O >> Alpen_map.ps
+##echo "-4.0 41.3    2 mm/year Vertical component" > text.txt
+##gmt pstext text.txt $R $J  -K -O >> Alpen_map.ps#
+#
+#echo "-5.5  40.5	0.002	0.000 	2mmPerYear" > symb.txt
+#gmt psvelo $R $J -h0  symb.txt  -Se200i/1/1  -Gblue -W1,blue    -K -O >> Alpen_map.ps
+#echo "-4.0 40.5  1 mm, Horizontal componet" > text.txt
+#gmt pstext text.txt $R $J -F+f12p,Helvetica+jLB   -K -O >> Alpen_map.ps
+
+
+#rm symb.txt
+rm text.txt
+
+ps2pdf Alpen_map.ps Results/Alpen_Residuals_map_FMC_IGB_W7_3d.pdf
+convert -quality 100 -density 300 -trim Results/Alpen_Residuals_map_FMC_IGB_W7_3d.pdf Results/Alpen_Residuals_map_FMC_IGB_W7_3d.png
+evince Results/Alpen_Residuals_map_FMC_IGB_W7_3d.pdf
+#psresize -pA4 -pA3 Alpen_map.pdf Alpen_map_A3.pdf
+# eog Alpen_map.png &
+# evince Alpen_Residuals_map.pdf &
+#cp Alpen_Residuals_map.pdf Results/Alpen_Residuals_map_$solution_text.pdf
+
+#echo "flag2:$flag2:"
+if [[ $flag2 == "-q" ||  $flag2 == "-quite" ]]   # quite, do not open file 
+then
+	echo "  ... Map Results/Alpen_Residuals_map_$solution_text.pdf is ready." # quite mode
+else 
+	#evince Results/Alpen_Residuals_map_$solution_text.pdf &
+fi
+

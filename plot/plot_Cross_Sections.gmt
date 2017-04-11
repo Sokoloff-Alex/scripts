@@ -1,0 +1,94 @@
+#!/bin/bash
+#
+# plot cross-sections of LSC and ETOPO along Meridians: 6.5E  &  13E 
+
+ps=Cross-sections.ps
+
+jx=x1.65
+jy=0.7
+
+# for 6.5E meridian 
+R=-R42.75/49/0/4500
+J=-J$jx/0.0004
+
+dy1=2.15c
+dy2=3.15c
+dy3=5.3c
+
+gmt set FONT_ANNOT_PRIMARY   6p,Helvetica,black
+gmt set FONT_LABEL 8p,Helvetica,black
+
+# plot ETOPO scroosection
+gmt psbasemap $R $J -Bf0.5a1:"Latitude [deg]":/f500a1000:"Topography [m]":WeS -X1i -Y1i  -P  -K > $ps
+gmt psxy $R $J ./dat_6.5E/topoMax.txt  -Ggray70 -O -K >> $ps
+gmt psxy $R $J ./dat_6.5E/topoMin.txt  -Ggray50 -O -K >> $ps
+gmt psxy $R $J ./dat_6.5E/topoMean.txt -W1,darkgreen -O -K >> $ps
+
+
+
+# Cross-section. North
+R=-R42.75/49/-1/3
+J=-J$jx/$jy
+gmt psbasemap $R $J -Bf0.5a1/f0.2a1:"Vn [mm/a]":We  -Y$dy1 -P  -O -K >> $ps
+
+gmt psxy $R $J ./dat_6.5E/Vn_LSC_err.txt -Glightred  -O -K >> $ps
+gmt psxy $R $J ./dat_6.5E/Vn_LSC.txt -W1,darkred     -O -K >> $ps
+
+gmt psxy $R $J ./dat_6.5E/Vn_obs.txt -Ey   -Sc0.1 -Gdarkblue   -O -K >> $ps
+
+# Cross-section. Up
+R=-R42.75/49/-1.5/3
+
+gmt psbasemap $R $J -Bf0.5a1/f0.2a1:"Vu [mm/a]":WeN  -Y$dy2 -P  -O -K >> $ps
+
+gmt psxy $R $J ./dat_6.5E/Vu_LSC_err.txt -Glightred  -O -K >> $ps
+gmt psxy $R $J ./dat_6.5E/Vu_LSC.txt -W1,darkred     -O -K >> $ps
+
+gmt psxy $R $J ./dat_6.5E/Vu_obs.txt -Ey  -Sc0.1   -Gdarkblue  -O -K >> $ps
+
+echo "43.0 2.5 Cross-section along 6.5E meridian" | gmt pstext  $R $J -F+f8p,Helvetica+jLB -O -K >> $ps 
+
+echo "47.5 2.1 0.2"          | gmt psxy $R $J -Sc0.1 -Ey   -Gdarkblue  -O -K >> $ps
+echo "47.75 2 GNSS velocity" | gmt pstext  $R $J -F+f8p,Helvetica+jLB -O -K >> $ps 
+
+#############################################################
+
+# for 13E meridian 
+R=-R45.5/48.5/0/4500
+J=-J$jx/0.0004
+
+# plot ETOPO scroosection
+gmt psbasemap $R $J -Bf0.5a1:"Latitude [deg]":/f500a1000:"Topography [m]":WeS -X12c -Y-$dy3  -P -O -K >> $ps
+gmt psxy $R $J ./dat_13E/topoMax.txt  -Ggray70 -O -K >> $ps
+gmt psxy $R $J ./dat_13E/topoMin.txt  -Ggray50 -O -K >> $ps
+gmt psxy $R $J ./dat_13E/topoMean.txt -W1,darkgreen -O -K >> $ps
+
+
+# Cross-section. North
+R=-R45.5/48.5/-1/3
+J=-J$jx/$jy
+gmt psbasemap $R $J -Bf0.5a1/f0.2a1:"Vn [mm/a]":We  -Y$dy1 -P  -O -K >> $ps
+
+gmt psxy $R $J ./dat_13E/Vn_LSC_err.txt -Glightred  -O -K >> $ps
+gmt psxy $R $J ./dat_13E/Vn_LSC.txt -W1,darkred     -O -K >> $ps
+
+gmt psxy $R $J ./dat_13E/Vn_obs.txt -Ey -Sc0.1   -Gdarkblue  -O -K >> $ps
+
+# Cross-section. Up
+R=-R45.5/48.5/-1.5/3
+gmt psbasemap $R $J -Bf0.5a1/f0.2a1:"Vu [mm/a]":WeN  -Y$dy2 -P  -O -K >> $ps
+
+gmt psxy $R $J ./dat_13E/Vu_LSC_err.txt -Glightred  -O -K >> $ps
+gmt psxy $R $J ./dat_13E/Vu_LSC.txt -W1,darkred     -O -K >> $ps
+
+gmt psxy $R $J ./dat_13E/Vu_obs.txt -Ey -Sc0.1   -Gdarkblue  -O -K >> $ps
+
+echo "45.75 2.5 Cross-section along 13E meridian" | gmt pstext  $R $J -F+f8p,Helvetica+jLB -O -K >> $ps 
+
+
+# convert
+ps2pdf $ps Cross-sections.pdf
+convert -quality 100 -density 300 -trim Cross-sections.pdf Cross-sections.png
+evince Cross-sections.pdf &
+eog    Cross-sections.png &
+

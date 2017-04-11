@@ -1,0 +1,73 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+#gmt gmtset PAPER_MEDIA A2 ANOT_FONT_SIZE 22 PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+#gmt gmtset COLOR_FOREGROUND white 
+#gmt gmtset COLOR_BACKGROUND white
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+#R=-R-6/18/41/52.6
+#J=-Jm0.43i
+#B=-Ba4g4f1/a2g2f1
+R=-R0/17/42/49.3
+J=-Jm0.62i
+B=-Ba2f1/a1f1
+#R=-R-5/17.4/41.8/52.5
+#J=-Jm0.45i
+#B=-Ba4f1/a2f1
+
+
+gmt psbasemap $R $J $B -K -X0.7i -Y0.5i  > Alpen_map.ps
+
+#gmt grdimage $R $J $B Europe.grd -IEurope_gradient.grd -CEurope.cpt -K -O >> Alpen_map.ps 
+gmt grdimage $R $J $B  Europe.grd  -Ctopo_tectonics.cpt -K -O >> Alpen_map.ps 
+
+
+#gmt pscoast $R $J $B -Dh -W1 -A50   -I1/0.5p,darkblue -I2/0.4p,darkblue -I3/0.3p,darkblue  -N1  -K -O >> Alpen_map.ps
+#gmt pscoast $R $J $B  -Dh  -A100 -W0.5 -S222/233/241    -K -O >> Alpen_map.ps
+
+gmt psxy $J $R BirdModell/PB2002_orogen_Alps.txt    -W0.5p,red -Sf0.25/3p   -K -O >> Alpen_map.ps 
+#gmt psxy $J $R Adriatics_boundary.txt              -W0.5p,red,-            -K -O >> Alpen_map.ps 
+
+## DRAW faults http://diss.rm.ingv.it/share-edsf/SHARE_WP3.2_Database.html
+# draw subduction PLN
+#gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t50   -K -O >> Alpen_map.ps 
+# draw Faults TOP
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,gray10   -K -O >> Alpen_map.ps 
+# Hazard Map Faults
+#gmt psxy  $R $J $B Alps_Geomorphology/HM-CFS-MapInfo-mifmid/Apls_Faults_Hazard_model.MIF -W0.25p,red   -K -O >> Alpen_map.ps  # same as Alps_Faults_TOP.MIF
+
+
+# Add text	
+echo "5 47.5    E  u  r  a  s  i  a  n    p  l  a  t  e"| gmt pstext $R $J -F+a30+f30p,Helvetica-Bold,black   -O -K >> Alpen_map.ps
+echo "13.5 44.1 A d r i a t i c  m i c r o p l a t e" 	| gmt pstext $R $J -F+a-45+f18p,Helvetica-Bold,black   -O -K >> Alpen_map.ps
+echo "15.7 46.4 Pannonian  "                   		| gmt pstext $R $J -F+a50+f18p,Helvetica-Bold,black   -O -K >> Alpen_map.ps
+echo "16.2 46.2 microplate "                   		| gmt pstext $R $J -F+a50+f18p,Helvetica-Bold,black   -O -K >> Alpen_map.ps
+echo "8.1  43.0 L i g u r i a n            m i c r o p l a t e" | gmt pstext $R $J -F+a10+f18p,Helvetica-Bold,black   -O -K >> Alpen_map.ps
+
+echo "11 48.3   A l p s     o r o g e n"       		| gmt pstext $R $J -F+a-2+f16p,Helvetica-Bold,red     -O -K >> Alpen_map.ps
+
+echo "9.2 46.3    A        l        p        s"           | gmt pstext $R $J -F+a19+f30p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "12 43.4   A   p   e   n   n   i   n   e   s" 	| gmt pstext $R $J -F+a-40+f20p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "1.3 42.6  P y r e n e e s"	       		| gmt pstext $R $J -F+a-10+f18p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "15.3 44.8 D   i   n   a   r   i   d   e   s" 	| gmt pstext $R $J -F+a-45+f18p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "3.5 45.2  Massif "                       		| gmt pstext $R $J -F+f18p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "3.5 44.8  Central"                       		| gmt pstext $R $J -F+f18p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+echo "6.5 46.9  J u r a"                           	| gmt pstext $R $J -F+a50+f18p,Helvetica-Bold,brown   -O -K >> Alpen_map.ps
+
+echo "9.5 45.2  P o  p l a n e"                		| gmt pstext $R $J -F+f20p,Helvetica-Bold,darkblue   -O -K >> Alpen_map.ps  
+
+ps2pdf Alpen_map.ps  Results/Alpen_tectonics.pdf
+convert -density 100 Results/Alpen_tectonics.pdf Results/Alpen_tectonics.png
+
+evince Results/Alpen_tectonics.pdf &
+eog    Results/Alpen_tectonics.png &
+
+
+

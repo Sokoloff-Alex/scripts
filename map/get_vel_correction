@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# Pasre *.OUT file and prepare Velocity files with RMS
+#
+
+inputfile=$1
+
+grep 'HELMR' $inputfile | cut -c7-10 | sort | uniq > EPN_cnstr.list
+grep -f EPN_cnstr.list Map_auxiliary/LLH_CRD_all.txt > Map_auxiliary/EPN_cnstr.d
+
+grep 'ESTIM\|HELMR' $inputfile | cut -c7-20 | sort | uniq > list
+num=$(cat list | wc -l)
+num2=$(echo "$num*16" | bc)
+
+grep --after-context=$num2 'ellipse' $inputfile > q
+
+grep --after-context=7 -f  list q | grep ' E '  | awk '{print $3}' > Long_est
+grep --after-context=7 -f  list q | grep ' N '  | awk '{print $3}' > Lat_est
+grep --after-context=7 -f  list q | grep ' VN ' | awk '{print $4}' > vN_corr
+grep --after-context=7 -f  list q | grep ' VE ' | awk '{print $4}' > vE_corr
+grep --after-context=7 -f  list q | grep ' VU ' | awk '{print $4}' > vU_corr
+
+grep -f  list q | cut -c2-15 | sort | uniq > names
+
+
+echo "# Velocity correction, Derived from $inputfile" > Vel_EN_corr.txt
+echo "# Velocity correction, Derived from $inputfile" > Vel_Up_corr.txt
+echo '# Long [deg],  Lat [deg],   vE_corr [m/yr], vN_corr [m/yr],   SITE Number' >> Vel_EN_corr.txt
+echo '# Long [deg],  Lat [deg],   0.0000,      vU_corr [m/yr],  SITE Number' >> Vel_Up_corr.txt
+paste Long_est Lat_est vE_corr vN_corr names | awk '{printf "%12.7f %12.7f   %10.5f       %10.5f       %4s %-10s \n", $1, $2, $3, $4, $5, $6}' >> Vel_EN_corr.txt
+paste Long_est Lat_est         vU_corr names | awk '{printf "%12.7f %12.7f   0.0000       %10.5f       %4s %-10s \n", $1, $2, $3, $4, $5}'     >> Vel_Up_corr.txt
+
+rm Long_est Lat_est vE_corr vN_corr vU_corr names list
+ 
+#gedit Vel_EN_corr.txt &
+#gedit Vel_Up_corr.txt &
+
+
+

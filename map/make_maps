@@ -1,0 +1,102 @@
+#!/bin/bash
+# 
+# Script to plot several maps and megre in one pdf document. 
+#
+# Alexandr Sokolov, KEG
+# 2016.05.20
+
+# Plot maps with Residuals: 3D, Vert., Hor., North, East
+# Plot map  with Velocity field: Vertical (ITRF) 
+
+Solution="$1"
+#flag=$2
+
+## copy data
+#if [[ $flag == "-u" || $flag == "-upd" || $flag == "-update"  ]]
+#then {
+#	echo "option: $flag : update files"
+	cp $P/ALP_NET/OUT/$Solution.PLT ./Solutions/.
+	cp $P/ALP_NET/OUT/$Solution.OUT ./Solutions/.
+	cp $P/ALP_NET/STA/$Solution.CRD ./Solutions/.
+	cp $P/ALP_NET/STA/$Solution.VEL ./Solutions/.
+#} else {
+#	echo "No update"
+#} fi
+
+# prepare data
+echo '  ... computing Residuals RMS'
+./get_RMS ./Solutions/$Solution.PLT > Map_auxiliary/Residuals.PLT
+
+# plot maps of residuals RMS
+./map_residuals.gmt -3D    -quite "$Solution"
+./map_residuals.gmt -vert  -quite "$Solution"
+./map_residuals.gmt -hor   -quite "$Solution"
+./map_residuals.gmt -north -quite "$Solution"
+./map_residuals.gmt -east  -quite "$Solution"
+
+pdfunite Results/Alpen_Residuals_map_3D.pdf Results/Alpen_Residuals_map_Vert.pdf  Results/Alpen_Residuals_map_Hor.pdf Results/Alpen_Residuals_map_North.pdf Results/Alpen_Residuals_map_East.pdf Results/map_residuals.pdf
+
+grep HELMR Solutions/$Solution.OUT | cut -c7-10 | sort | uniq > EPN_cnstr.list
+grep -f EPN_cnstr.list Map_auxiliary/LLH_CRD_all.txt > Map_auxiliary/EPN_cnstr.d
+
+# Plot maps for velocity field in ITRF
+get_vector_field ./Solutions/$Solution 
+./map_vector_field.gmt      -v -quite "$Solution"
+./map_vector_field_topo.gmt -v -quite "$Solution"
+
+# Plot maps for velocity field in ETRF
+get_vector_field ./Solutions/$Solution -e 
+./map_vector_field.gmt -v -quite "$Solution"
+./map_vector_field.gmt -h -quite "$Solution"
+./map_vector_field_topo.gmt -v -quite "$Solution"
+./map_vector_field_topo.gmt -h -quite "$Solution"
+
+pdfunite Results/Alpen_map_velocity_field_ITRF_Vert.pdf      Results/Alpen_map_velocity_field_ETRF_Vert.pdf      Results/Alpen_map_velocity_field_ETRF_Hor.pdf      Results/map_velocity.pdf
+pdfunite Results/Alpen_map_velocity_field_topo_ITRF_Vert.pdf Results/Alpen_map_velocity_field_topo_ETRF_Vert.pdf Results/Alpen_map_velocity_field_topo_ETRF_Hor.pdf Results/map_velocity_topo.pdf
+
+
+## plot residuals map in alternative color palette
+# plot maps of residuals RMS
+./map_residuals_test.gmt -3D    -quite "$Solution"
+./map_residuals_test.gmt -vert  -quite "$Solution"
+./map_residuals_test.gmt -hor   -quite "$Solution"
+./map_residuals_test.gmt -north -quite "$Solution"
+./map_residuals_test.gmt -east  -quite "$Solution"
+
+## make correction map
+#
+./get_vel_correction ./Solutions/$Solution.OUT
+./map_velocity_correction.gmt -all -quite "$Solution"
+
+./get_crd_correction ./Solutions/$Solution.OUT
+./map_crd_correction.gmt -all -quite "$Solution"
+
+pdfunite Results/Alpen_Residuals_map_3D.pdf Results/Alpen_Residuals_map_Vert.pdf  Results/Alpen_Residuals_map_Hor.pdf Results/Alpen_Residuals_map_North.pdf Results/Alpen_Residuals_map_East.pdf Results/map_Residuals_altern.pdf
+pdfunite Results/map_residuals.pdf Results/map_velocity.pdf Results/map_Residuals_altern.pdf Results/map_velocity_topo.pdf Results/Alpen_map_vel_correction.pdf Results/Alpen_map_crd_correction.pdf Results/Alpen_maps_All_$Solution.pdf
+
+
+rm Results/Alpen_Residuals_map_3D.pdf 
+rm Results/Alpen_Residuals_map_Vert.pdf  
+rm Results/Alpen_Residuals_map_Hor.pdf 
+rm Results/Alpen_Residuals_map_North.pdf
+rm Results/Alpen_Residuals_map_East.pdf
+
+rm Results/Alpen_map_velocity_field_ITRF_Vert.pdf 
+rm Results/Alpen_map_velocity_field_ETRF_Vert.pdf
+rm Results/Alpen_map_velocity_field_ETRF_Hor.pdf
+rm Results/Alpen_map_velocity_field_topo_ITRF_Vert.pdf 
+rm Results/Alpen_map_velocity_field_topo_ETRF_Vert.pdf
+rm Results/Alpen_map_velocity_field_topo_ETRF_Hor.pdf
+rm Results/Alpen_map_vel_correction.pdf
+rm Results/Alpen_map_crd_correction.pdf
+
+rm Results/map_residuals.pdf
+rm Results/map_velocity.pdf
+rm Results/map_velocity_topo.pdf
+rm Results/map_Residuals_altern.pdf
+
+
+evince Results/Alpen_maps_All_$Solution.pdf & 
+
+
+

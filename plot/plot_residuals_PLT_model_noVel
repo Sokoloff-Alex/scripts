@@ -1,0 +1,524 @@
+#!/bin/bash
+# plot Residuals for specified site
+# command:
+# ./plot_resudials_PLT [SiteName] [inputFile]
+# 
+# output:
+# SiteName_plot_PLT.pdf
+
+
+SITE=$1
+inputFile="$2"
+inputFile2="$3"
+flag="$4"
+
+#GMT gmtset LABEL_FONT       10p,Helvetica,black
+gmt set FONT_ANNOT_PRIMARY   7p,Helvetica,black
+gmt set FONT_ANNOT_SECONDARY 6p,Helvetica,black
+
+echo "Plot residual for $SITE from $inputFile and it's functional model" 
+
+
+### Prepare model by taking difference between solution and FD_IGB.PLT
+
+
+
+### make table for Equipment changes
+#grep "$SITE " ALP_NET.STA | tail -n +2 | awk '{printf"%4s-%2s-%2s\n", $4, $5, $6}' | sort | uniq > Site_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-120 | uniq --skip-chars=42 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Receiver_changes
+grep "$SITE " ALP_NET.STA | tail -n +2 | cut -c28-202 | uniq --skip-chars=94 | awk '{printf"%4s-%2s-%2s\n", $1, $2, $3}' | uniq > Ant_Radom_changes
+
+### take Events form Event list file *.EVL
+grep "$SITE" $inputFile2.EVL > "$SITE"_events
+
+### find Functional model by differencing Input-Ouput *.PLT files
+NumOfEntries=$(grep "$SITE" --count $inputFile);
+if [[ "$NumOfEntries" == "0" ]]
+then 
+	bash get_residuals_PLT_merge $SITE $inputFile2.PLT 
+else
+	bash get_residuals_PLT       $SITE $inputFile2.PLT  
+fi
+
+# A posteriory residuals
+cat North > North_APOS
+cat East  > East_APOS
+cat Up    > Up_APOS
+
+#bash get_coordinates_PLT $SITE $inputFile  # Extract Residuals for SITE from inputFile file
+if [[ "$NumOfEntries" == "0" ]]
+then
+	bash get_residuals_PLT_merge $SITE $inputFile	
+else
+	bash get_residuals_PLT       $SITE $inputFile  
+fi
+
+diff -y North North_APOS | grep '|' | awk '{printf "%s   %s\n", $1, $2-$6}' > North_Model
+diff -y East  East_APOS  | grep '|' | awk '{printf "%s   %s\n", $1, $2-$6}' > East_Model
+diff -y Up    Up_APOS    | grep '|' | awk '{printf "%s   %s\n", $1, $2-$6}' > Up_Model
+
+# get RMS 
+RMS_N=$(awk < North '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+RMS_E=$(awk < East  '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+RMS_U=$(awk < Up    '{ sum += $2**2; n++ } END { if (n > 0) print sqrt( sum / n) ; }' )
+
+fileName="$SITE"_plot_"$inputFile"_"$inputFile2"
+ps=$fileName.ps
+echo $fileName
+
+# extract velocities for solution FMC_IGB_W7
+if [[ "$inputFile" == "FMC_IGB_W7.PLT" ]]
+then
+	Ve=$( grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=45-50)
+	SVe=$(grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=54-58)
+	Vn=$( grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=63-68)
+	SVn=$(grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=72-76)
+
+	Ve_res=$( grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=80-86)
+	SVe_res=$(grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=90-94)
+	Vn_res=$( grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=97-104)
+	SVn_res=$(grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=108-112)
+
+	Vu=$( grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=117-122)
+	SVu=$(grep $SITE FMC_IGB_W7.vel_field_table | cut --characters=126-130)
+fi
+
+######################## Residuals subplot ##################################################
+
+### Plot Residuals for Up component ###
+
+# check min & max values of Residuals
+min=$(more Up | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -40) print -40; else if ($1 > -10) print -10; else print $1}')
+max=$(more Up | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  40) print  40; else if ($1 <  10) print  10; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+J=-JX25.75/8
+
+GMT gmtset PAGE_COLOR  255/255/255 COLOR_FOREGROUND 0/0/0 BASEMAP_FRAME_RGB 0/0/0
+GMT psbasemap $R $J -Bf01oa01Y:"Year":/g50f1a5:"[mm]":WESn  -K > $ps
+
+
+### Add threshold ---
+echo "2003-12-01 15" > newLine
+echo "2017-02-01 15" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -15" > newLine
+echo "2017-02-01 -15" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+### Add lines for Eqiupment changes 
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# plot residuals
+#GMT psxy $R $J Up   -W1/200/050/025 -K -O >> $ps
+GMT psxy $R $J Up   -Ey0.1/160/160/160  -K -O >> $ps
+GMT psxy $R $J Up   -Sc0.1   -G200/050/025   -K -O >> $ps
+GMT psxy $R $J Up_Model   -Sc0.05   -G050/250/050   -K -O >> $ps
+
+### plot events 
+
+# plot NEW-OUTL
+grep "NEW-OUTL" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-OUTL
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine   -W1,grey,- -O -K >> $ps
+} done < Discontinuities_NEW-OUTL
+
+# plot DRIFT-TS
+grep "DRIFT-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_DRIFT-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W7,000/050/025,- -O -K >> $ps
+} done < Discontinuities_DRIFT-TS
+
+# plot OFFST-TS
+grep "OFFST-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_OFFST-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W8,150/200/025,- -O -K >> $ps
+} done < Discontinuities_OFFST-TS
+
+# plot NEW-DISC
+grep "NEW-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W4,050/100/025,- -O -K >> $ps
+} done < Discontinuities_NEW-DISC
+
+# plot NEW-VELO
+grep "NEW-VELO" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-VELO
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W8,red,- -O -K >> $ps
+} done < Discontinuities_NEW-VELO
+
+# plot STA-DISC
+grep "STA-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_STA-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W7,blue,- -O -K >> $ps
+} done < Discontinuities_STA-DISC
+
+
+
+
+##################### Add legend for Equipment changes #######################
+
+echo "2004-03-01 -39" > newLine
+echo "2004-03-01 -30" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -W20/250/100/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2004-04-01 -36 10 0 0 0 Antenna / Radom change
+EOF
+
+echo "2006-06-01 -39" > newLine
+echo "2006-06-01 -30" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -W5/100/250/100 -O -K >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2006-07-01 -36 10 0 0 0 Receiver change
+EOF
+
+# Add legend for timeseries
+echo "2004-03-01 35" > newLine
+echo "2004-08-01 35" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine        -W1/200/050/025 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-40/40 $J newLine -Sc0.1   -G200/050/025 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2004-10-01 34 10 0 0 0 Up-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2016-02-01 32 16 0 0 0 $SITE 
+EOF
+
+text=$(echo "$RMS_U" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K << EOF >> $ps
+2014-02-01 32 12 0 0 0 $text
+EOF
+
+#echo "2011-02-01 32 12 0 0 0   Vu = $Vu \261$SVu mm/yr" | GMT pstext -R2003-12-01T/2017-02-01T/-40/40 $J -O -K >> $ps
+
+
+
+### Plot Residuals for East component  ###
+
+min=$(more East | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -15) print -15; else if ($1 > -5) print -5; else print $1}')
+max=$(more East | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  15) print  15; else if ($1 <  5) print  5; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+
+J=-JX25.75/4
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f1a5:"[mm]":WEsn -Y3.5i  -O -K >> $ps
+
+
+
+### Add threshold ---
+echo "2003-12-01 10" > newLine
+echo "2017-02-01 10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -10" > newLine
+echo "2017-02-01 -10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+### Add lines for Eqiupment changes 
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# Add legend for timeseries
+echo "2004-03-01 15" > newLine
+echo "2004-08-01 15" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine         -W1/000/000/120 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine  -Sc0.1   -G000/000/100 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2004-10-01 14 10 0 0 0 East-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2016-02-01 13 16 0 0 0 $SITE
+EOF
+
+
+# plot temeseries
+#GMT psxy $R $J East         -W1/000/000/120 -K -O >> $ps
+GMT psxy $R $J East  -Ey0.1/160/160/160   -K -O >> $ps
+GMT psxy $R $J East  -Sc0.1   -G000/000/100 -K -O >> $ps
+GMT psxy $R $J East_Model   -Sc0.05   -G050/250/050   -K -O >> $ps
+
+### plot events 
+
+# plot NEW-OUTL
+grep "NEW-OUTL" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-OUTL
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine   -W1,grey,- -O -K >> $ps
+} done < Discontinuities_NEW-OUTL
+
+
+# plot DRIFT-TS
+grep "DRIFT-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_DRIFT-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W7,000/050/025,- -O -K >> $ps
+} done < Discontinuities_DRIFT-TS
+
+# plot OFFST-TS
+grep "OFFST-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_OFFST-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W8,150/200/025,- -O -K >> $ps
+} done < Discontinuities_OFFST-TS
+
+# plot NEW-DISC
+grep "NEW-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W4,050/100/025,- -O -K >> $ps
+} done < Discontinuities_NEW-DISC
+
+# plot NEW-VELO
+grep "NEW-VELO" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-VELO
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W8,red,- -O -K >> $ps
+} done < Discontinuities_NEW-VELO
+
+# plot STA-DISC
+grep "STA-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_STA-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W7,blue,- -O -K >> $ps
+} done < Discontinuities_STA-DISC
+
+
+
+text=$(echo "$RMS_E" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2014-02-01 13 12 0 0 0 $text
+EOF
+
+#echo "2011-02-01 13 12 0 0 0   Ve = $Ve \261$SVe mm/yr"         | GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K >> $ps
+#echo "2007-08-01 13 12 0 0 0   Ve_res =$Ve_res \261$SVe_res mm/yr" | GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K >> $ps
+
+
+### Plot Residuals for North component ###
+
+min=$(more North | awk '{printf "%-10.3f\n", $2-1}' | sort -g | head -1 | xargs printf "%.*f\n" 0 | awk '{if($1 < -15) print -15; else if ($1 > -5) print -5; else print $1}')
+max=$(more North | awk '{printf "%-10.3f\n", $2+1}' | sort -g | tail -1 | xargs printf "%.*f\n" 0 | awk '{if($1 >  15) print  15; else if ($1 <  5) print  5; else print $1}')
+lim=$(echo "$min $max" | awk '{if (-$1 > $2) print -$1; else print $2}')
+R=-R2003-12-01T/2017-02-01T/-$lim/$lim
+J=-JX25.75/4
+GMT psbasemap $R $J -Bf01oa01Y:"Time":/g50f1a5:"[mm]":WEsn -Y2i  -O -K >> $ps
+
+
+
+echo "2003-12-01 10" > newLine
+echo "2017-02-01 10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+echo "2003-12-01 -10" > newLine
+echo "2017-02-01 -10" >> newLine
+GMT psxy $R $J newLine -Wthinner,- -O -K >> $ps
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W20/250/100/100 -O -K >> $ps
+} done < Ant_Radom_changes
+
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W5/100/250/100 -O -K >> $ps
+} done < Receiver_changes
+
+# Add legend for timeseries
+echo "2004-03-01 15" > newLine
+echo "2004-08-01 15" >> newLine
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine        -W1/000/050/025 -K -O >> $ps
+GMT psxy -R2003-12-01T/2017-02-01T/-20/20 $J newLine -Sc0.1   -G000/050/025 -K -O >> $ps
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2004-10-01 14 10 0 0 0 North-component
+EOF
+
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2016-02-01 13 16 0 0 0 $SITE
+EOF
+
+
+# plot residuals 
+#GMT psxy $R $J North        -W1/000/050/025 -K -O >> $ps
+GMT psxy $R $J North -Ey0.1/160/160/160     -K -O >> $ps
+GMT psxy $R $J North -Sc0.1   -G000/050/025 -K -O >> $ps
+GMT psxy $R $J North_Model   -Sc0.05   -G050/250/050   -K -O >> $ps
+
+
+### plot events 
+
+# plot NEW-OUTL
+grep "NEW-OUTL" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-OUTL
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine   -W1,grey,- -O -K >> $ps
+} done < Discontinuities_NEW-OUTL
+
+# plot DRIFT-TS
+grep "DRIFT-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_DRIFT-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W7,000/050/025,- -O -K >> $ps
+} done < Discontinuities_DRIFT-TS
+
+# plot OFFST-TS
+grep "OFFST-TS" "$SITE"_events | cut --characters=28-38 > Discontinuities_OFFST-TS
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	#GMT psxy $R $J newLine  -W8,150/200/025,- -O -K >> $ps
+} done < Discontinuities_OFFST-TS
+
+# plot NEW-DISC
+grep "NEW-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W4,050/100/025,- -O -K >> $ps
+} done < Discontinuities_NEW-DISC
+
+# plot NEW-VELO
+grep "NEW-VELO" "$SITE"_events | cut --characters=28-38 > Discontinuities_NEW-VELO
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W8,red,-  -O -K >> $ps
+} done < Discontinuities_NEW-VELO
+
+# plot STA-DISC
+grep "STA-DISC" "$SITE"_events | cut --characters=28-38 > Discontinuities_STA-DISC
+while read line
+do {
+	echo "$line   -$lim" > newLine
+	echo "$line    $lim" >> newLine	
+	GMT psxy $R $J newLine  -W7,blue,- -O -K >> $ps
+} done < Discontinuities_STA-DISC
+
+
+
+text=$(echo "$RMS_N" | awk '{printf "RMS %-5.2f mm", $1}')
+GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K << EOF >> $ps
+2014-02-01 13 12 0 0 0 $text
+EOF
+
+#echo "2011-02-01 13 12 0 0 0   Vn = $Vn \261$SVn mm/yr"     | GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K >> $ps
+#echo "2007-08-01 13 12 0 0 0   Vn_res =$Vn_res \261$SVn_res mm/yr" | GMT pstext -R2003-12-01T/2017-02-01T/-20/20 $J -O -K >> $ps
+
+
+
+###########################################################################
+
+ps2pdf    $ps Plots_pdf/FMC_NET_1/$fileName.pdf
+
+convert -quality 100 -density 300 -trim Plots_pdf/FMC_NET_1/$fileName.pdf Plots_pdf/FMC_NET_1/$fileName.png
+
+#GMT ps2raster $ps  Plots_png/$fileName.png
+#convert Plots_pdf/$fileName.pdf Plots_png/$fileName.png
+#eog Plots_png/$fileName.png &
+#psresize -pA4 -pA3 $fileName.pdf "$fileName"_A3.pdf
+rm $fileName.ps
+
+#rm Site_changes
+rm Receiver_changes
+rm Ant_Radom_changes
+rm newLine
+rm "$SITE"_events
+rm Discontinuities_STA-DISC  # pre-defined           
+rm Discontinuities_DRIFT-TS  # RATE
+rm Discontinuities_OFFST-TS  # DISC
+rm Discontinuities_NEW-DISC  # 
+rm Discontinuities_NEW-VELO  # velocity change
+rm Discontinuities_NEW-OUTL  # outlier
+rm -f North
+rm -f East
+rm -f Up
+
+rm North_APOS
+rm North_Model
+rm East_APOS
+rm East_Model
+rm Up_APOS
+rm Up_Model
+
+if [[ "$flag" == "--quite" ]]
+then
+	echo "$SITE is done";
+else 
+	evince Plots_pdf/FMC_NET_1/$fileName.pdf &
+	#eog    Plots_pdf/FMC_NET_1/$fileName.png &
+
+	echo "$SITE is done";
+fi
+
+
+
+
+
+

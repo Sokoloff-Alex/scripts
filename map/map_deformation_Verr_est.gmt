@@ -1,0 +1,142 @@
+#!/bin/bash
+# Map of GNSS networks on Alpen region
+
+flag=$1
+flag2=$2
+
+SolutionPath=$3
+SolutionName=$(echo "$SolutionPath" | sed  "s/\//\n/g"  | tail -1)
+
+gmt gmtset PS_PAGE_COLOR 254/254/254
+
+R=-R1/16/42/49.3
+J=-Jm0.34i
+B=-Ba2f1/a2f1WS
+
+scale=200i;
+
+############### plot 1 ################
+B=-Ba2f1/a2f1WSen
+gmt psbasemap $R $J $B  -K -X1.2c -Y1c    > Alpen_map.ps
+gmt grdimage $R $J Europe.grd  -Ctopo_simple.cpt -K -O >> Alpen_map.ps 
+gmt pscoast $R $J $B -Dh -W1 -A50   -I1/0.5p,darkblue -I2/0.4p,darkblue -I3/0.3p,darkblue  -N1  -K -O >> Alpen_map.ps
+
+# draw subduction PLN
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t30   -K -O >> Alpen_map.ps
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,black   -K -O >> Alpen_map.ps 
+
+#gmt grdimage  $R $J  Deformation/Verr_up_Mikhail.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_conv.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdimage  $R $J  Deformation/Verr_up_Cs0.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_prop.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+
+# add contour
+gmt grdcontour $R $J $B VelocityField/Vel_up_grid2.nc -Ckriging_contours.cnt -Akriging_contours.cnt+f10p -W1p  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J $B  -Dh -W1 -A50  -N1            -K -O >> Alpen_map.ps
+gmt pscoast $R $J $B  -Dh -W1 -A50  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+#  Deformation Vertical component
+gmt psscale -CVerr_scale.cpt -Dx1c/5+w4c/0.25c+jTC -Bxaf+l"uncertanty" -By+l[mm/yr] -O -K  >> Alpen_map.ps
+
+
+
+################## plot 2 ##############################################
+B=-Ba2f1/a2f1wSEn
+gmt psbasemap $R $J $B -K -X14c  -O >> Alpen_map.ps
+
+gmt grdimage $R $J Europe.grd  -Ctopo_simple.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast $R $J $B -Dh -W1 -A50   -I1/0.5p,darkblue -I2/0.4p,darkblue -I3/0.3p,darkblue  -N1  -K -O >> Alpen_map.ps
+
+# draw subduction PLN
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t30   -K -O >> Alpen_map.ps
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,black   -K -O >> Alpen_map.ps 
+
+
+#gmt grdimage  $R $J  Deformation/Verr_up_Mikhail.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_conv.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_Cs0.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdimage  $R $J  Deformation/Verr_up_prop.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+
+# add contour
+gmt grdcontour $R $J $B VelocityField/Vel_up_grid2.nc -Ckriging_contours.cnt -Akriging_contours.cnt+f10p -W1p  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J $B  -Dh -W1 -A50  -N1            -K -O >> Alpen_map.ps
+gmt pscoast $R $J $B  -Dh -W1 -A50  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+################## plot 3 ################################
+B=-Ba2f1/a2f1wsEN
+gmt psbasemap $R $J $B -K -O -Y10c   >> Alpen_map.ps
+
+gmt grdimage $R $J Europe.grd  -Ctopo_simple.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast $R $J $B -Dh -W1 -A50   -I1/0.5p,darkblue -I2/0.4p,darkblue -I3/0.3p,darkblue  -N1  -K -O >> Alpen_map.ps
+
+# draw subduction PLN
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t30   -K -O >> Alpen_map.ps
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,black   -K -O >> Alpen_map.ps 
+
+
+gmt grdimage  $R $J   Deformation/Verr_up_Mikhail.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J   Deformation/Verr_up_conv.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J   Deformation/Verr_up_Cs0.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J   Deformation/Verr_up_prop.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+
+# add contour
+gmt grdcontour $R $J $B VelocityField/Vel_up_grid2.nc -Ckriging_contours.cnt -Akriging_contours.cnt+f10p -W1p  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J $B  -Dh -W1 -A50  -N1            -K -O >> Alpen_map.ps
+gmt pscoast $R $J $B  -Dh -W1 -A50  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+########## plot 4 ###############################
+B=-Ba2f1/a2f1WseN
+gmt psbasemap $R $J $B -K -O -X-14c  >> Alpen_map.ps
+
+gmt grdimage $R $J Europe.grd  -Ctopo_simple.cpt -K -O >> Alpen_map.ps 
+
+gmt pscoast $R $J $B -Dh -W1 -A50   -I1/0.5p,darkblue -I2/0.4p,darkblue -I3/0.3p,darkblue  -N1  -K -O >> Alpen_map.ps
+
+# draw subduction PLN
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_PLN.MIF -Ggray50 -t30   -K -O >> Alpen_map.ps
+gmt psxy  $R $J $B Alps_Geomorphology/DB-CFS-MapInfo-mifmid/Alps_Faults_TOP.MIF -W0.75p,black   -K -O >> Alpen_map.ps 
+
+
+#gmt grdimage  $R $J  Deformation/Verr_up_Mikhail.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+gmt grdimage  $R $J   Deformation/Verr_up_rms.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_Cs0.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+#gmt grdimage  $R $J  Deformation/Verr_up_prop.nc  -G -CVerr_scale.cpt -t50  -K -O >> Alpen_map.ps 
+
+# add contour
+gmt grdcontour $R $J $B VelocityField/Vel_up_grid2.nc -Ckriging_contours.cnt -Akriging_contours.cnt+f10p -W1p  -K -O >> Alpen_map.ps 
+
+# add coastline again and Water Mask
+gmt pscoast $R $J $B  -Dh -W1 -A50  -N1            -K -O >> Alpen_map.ps
+gmt pscoast $R $J $B  -Dh -W1 -A50  -S222/233/241  -K -O >> Alpen_map.ps
+
+# add circle for stations
+gmt psxy $R $J VelocityField/Vu_res.txt -h2 -Sc0.1 -Gdarkgreen -K -O  >>  Alpen_map.ps 
+
+##### end of plots ######################
+
+
+ps2pdf Alpen_map.ps Alpen_map.pdf
+
+mv Alpen_map.pdf Results/Deformation_Vertical_Verr_up_est.pdf
+evince Results/Deformation_Vertical_Verr_up_est.pdf &
+
+
+
+
