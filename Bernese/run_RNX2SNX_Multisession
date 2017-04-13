@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Run Bernese 5.2 in Non-interactive mode with RNX2SNX strategy
+# for list of sessions from taken lile ($sessions_file in format yyyy ssss). 
+#
+# Processing of sessions is sequential.
+#
+# For defining correct BPE_CAMPAIGN and TASK_ID see ${U}/SCRIPT/rnx2snx_pcs.pl
+# 
+# The variables for strategy (PCF) must be updated manually in file ${U}/PCF/RNX2SNX.PCF
+# (because the perl module runBPE.pm overwrites the "${U}/PAN/RUNBPE.INP" file with deafaults)
+#
+# example :
+# 	./run_RNX2SNX_Multisession (sessions_file)
+#
+# Alexandr Sokolov, KEG
+# 25.04.2016
+
+
+echo "";
+echo 'Run Bernese 5.2 in Non-interactive mode with RNX2SNX strategy for list of sessions';
+echo "";
+
+sessions_file=$1
+
+while read line 
+do	
+	yyyy=$(echo "$line" | cut --characters=1-4)
+	ssss=$(echo "$line" | cut --characters=6-9)
+	#echo "$line"
+	echo "Start processing : $line"
+	echo "perl $U/SCRIPT/rnx2snx_pcs.pl" "$yyyy" "$ssss" 
+	perl $U/SCRIPT/rnx2snx_pcs.pl "$yyyy" "$ssss"
+	
+	# save logs
+	grep --before-context=2 --after-context=1 'PID_SUB     ' $P/ALP_NET/BPE/ALP_NEX.OUT >> ALP_NEX_BPE.OUT
+	grep Session $P/ALP_NET/BPE/ALP_NEX.RUN >> ALP_NEX_BPE.RUN
+done < $sessions_file #(format : yyyy ssss)
+
+echo "Done"

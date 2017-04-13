@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# Run Bernese 5.2 in Non-interactive mode with RNX2SNXW strategy
+# for list of sessions from taken lile ($sessions_file in format yyyy ssss). 
+#
+# Processing of sessions is sequential.
+#
+# For defining correct BPE_CAMPAIGN and TASK_ID see ${U}/SCRIPT/rnx2snxw_pcs.pl
+# 
+# The variables for strategy (PCF) must be updated manually in file ${U}/PCF/RNX2SNXW.PCF
+# (because the perl module runBPE.pm overwrites the "${U}/PAN/RUNBPE.INP" file with deafaults)
+#
+# example :
+# 	./run_RNX2SNXW_Multisession (sessions_file)
+#
+# Alexandr Sokolov, KEG
+# 04.07.2016
+
+
+echo "";
+echo 'Run Bernese 5.2 in Non-interactive mode with RNX2SNXW strategy to compute weekly solutions';
+echo "";
+
+sessions_file=$1
+
+#printf '                Statistics concerning time in sec                Statistics concerning # of jobs  
+#
+#Session      BPE     CPU  =  PGM  +  Aux + Delay Queuing      PID  +  SUB   =  OK + Error   Rerun  Start                 End                   Duration
+#-------------------------------------------------------------------------------------------------------------------------------------------------------\n'> ALP_NWX_BPE.OUT
+
+while read line 
+do	
+	#echo "$line"
+	yyyy=$(echo "$line" | cut --characters=1-4)
+	ssss=$(echo "$line" | cut --characters=6-9)
+	yy=$(  echo "$yyyy" | cut --characters=3-4)
+
+	################ Run daily, nominal RNX2SNX script ################
+	# run Bernese	
+	echo "Start processing : $line"
+	echo "perl $U/SCRIPT/rnx2snx_pcs.pl" "$yyyy" "$ssss" 
+	perl $U/SCRIPT/rnx2snx_pcs.pl "$yyyy" "$ssss"
+	
+	# save logs
+	grep --before-context=2 --after-context=1 'PID_SUB     ' $P/ALP_NET/BPE/ALP_NEX.OUT >> ALP_NEX_BPE.OUT
+	grep Session $P/ALP_NET/BPE/ALP_NEX.RUN >> ALP_NEX_BPE.RUN
+
+	################ run weekly, RNX2SNXW script ######################
+	# copy files
+	echo "copy files: *.CRD, *.CLB, *.PSH, *.PHO"
+	echo "... copy "'$S'"/RNX2SNX/$yyyy/STA/ALP$yy$ssss.CRD --> "'$P'"/ALP_NET/STA/." 
+	cp $S/RNX2SNX/$yyyy/STA/ALP$yy$ssss.CRD $P/ALP_NET/STA/.
+	
+	echo "... copy "'$S'"/RNX2SNX/$yyyy/OBS/$yy$ssss/$yy$ssss??.CLB --> "'$P'"/ALP_NET/STA/." 
+	cp $S/RNX2SNX/$yyyy/OBS/$yy$ssss/$yy$ssss??.CLB $P/ALP_NET/STA/. 
+
+	echo "... copy "'$S'"/RNX2SNX/$yyyy/OBS/$yy$ssss/????$ssss.PS[H,O] --> "'$P'"/ALP_NET/OBS/."
+	cp $S/RNX2SNX/$yyyy/OBS/$yy$ssss/????$ssss.PS[H,O] $P/ALP_NET/OBS/. 
+	
+	# run Bernese
+	echo "Start processing : $line"
+	echo "perl $U/SCRIPT/rnx2snxw_pcs.pl" "$yyyy" "$ssss" 
+	perl $U/SCRIPT/rnx2snxw_pcs.pl "$yyyy" "$ssss"
+	
+	# save logs
+	grep --before-context=2 --after-context=1 'PID_SUB     ' $P/ALP_NET/BPE/ALP_NWX.OUT >> ALP_NWX_BPE.OUT
+	grep Session $P/ALP_NET/BPE/ALP_NWX.RUN >> ALP_NWX_BPE.RUN
+	echo "$line" >> list_done.txt
+done < $sessions_file #(format : yyyy ssss)
+
+echo "Daily and Weekly solutions are computed"
+echo "See statistics in ALP_NWX_BPE.OUT file"
+echo "Done"
+
+#gedit ALP_NWX_BPE.OUT &
+#gedit ALP_NWX_BPE.RUN &
+
+
+
