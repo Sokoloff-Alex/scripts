@@ -1,9 +1,10 @@
 #!/bin/bash
 
-echo 'Adding RMS outliers to .STA file'
+echo 'Preparing RMS outliers for .STA file'
 
 
-inputFile=$P/ALP_NET/OUT/"$1"
+#inputFile=$P/SAPOS/OUT/"$1"
+inputFile="$1"
 
 #Type2LineStart=$(grep --line-number 'TYPE 003: HANDLING OF STATION PROBLEMS' ALP_NET.STA | awk '{printf"%-10d \n", $1}')
 #Type2LineStart=$((Type2LineStart+5))
@@ -20,11 +21,11 @@ tail -n +$StartLineOfOutliers $inputFile > Outliers_notification
 StartLineOfOutliersRMS=$(grep --line-number 'Root-mean-square errors exceeding specified threshold' Outliers_notification | awk '{printf"%-10d \n", $1}') 
 len=$((StartLineOfOutliersRMS-11))
 
-tail -n +9 Outliers_notification | head -$len | awk '{if ($5>100 || $5<-100) print  }' > Outliers_table1
+tail -n +9 Outliers_notification | head -$len | awk '{if (substr($0,33,10)*1>100 || substr($0,33,10)*1<-100) print  }' > Outliers_table1
 tail -n +$((StartLineOfOutliersRMS+5)) Outliers_notification  | head --lines=-6 > Outliers_table2
 
-more Outliers_table1 | awk '{printf"%4s %-10s       001  %s %s  %s %s  %s %8.2f mm \n", $1, $2, $6, $7, $8, $9, $4, $5}' >> old_outliers
-more Outliers_table2 | awk '{printf"%4s %-10s       001  %s %s  %s %s  %s %8.2f mm \n", $1, $2, $5, $6, $7, $8, $3, $4}' >> old_outliers
+more Outliers_table1       | awk '{printf"%16s      001  %s  %s mm \n", substr($0,2,16), substr($0,53,40), substr($0,31,12)}'  >> old_outliers
+tail -n +5 Outliers_table2 | awk '{printf"%16s      001  %s  %s mm \n", substr($0,2,16), substr($0,53,40), substr($0,31,12)}'  >> old_outliers
 
 sort old_outliers | uniq > new_outliers
 

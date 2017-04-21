@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+#  Parse TYPE 001 table from *.STA to generate table TYPE 003 for STA
+#  filtering out station observation interval less than 2 years
+#  Add into TYPE 003 table of STA file period of observation shorer than 2 year 
+#
+#
+# 08.02.2016
+# Alexandr Sokolov, KEG
+
+filename=$1  #*.STA # file with TYPE 001 table content only
+
+grep 'TYPE 001' --after-context=1000 $1 | grep 'TYPE 002' --before-context=1000 | grep -v 'TYPE 00' | tail -n +5 | grep -v '^$' > table_1
+
+filename=table_1
+
+#echo 'AJAC 10077M005        001  1980 01 06 00 00 00  2099 12 31 00 00 00  Replaced by artificial'
+ 
+
+while read line1
+do {
+	#echo "line1:$line1"
+	SITE_Dome=$(echo "$line1"  | cut --characters=1-16)
+	YYYY_start=$(echo "$line1" | cut --characters=28-31)
+	MM_start=$(echo "$line1" | cut --characters=33-34)
+	DD_start=$(echo "$line1" | cut --characters=36-37)
+	hh_start=$(echo "$line1" | cut --characters=39-40)
+	mm_start=$(echo "$line1" | cut --characters=42-43)
+	ss_start=$(echo "$line1" | cut --characters=45-46)
+
+	MJD_start=$(gps_date -ymd $YYYY_start $MM_start $DD_start -o "%J")
+	
+	YYYY_end=$(echo "$line1" | cut --characters=49-52)
+	MM_end=$(echo "$line1"   | cut --characters=54-55)
+	DD_end=$(echo "$line1"   | cut --characters=57-58)
+	hh_end=$(echo "$line1"   | cut --characters=60-61)
+	mm_end=$(echo "$line1"   | cut --characters=63-64)
+	ss_end=$(echo "$line1"   | cut --characters=66-67)
+	MJD_end=$(gps_date -ymd $YYYY_end $MM_end $DD_end -o "%J")
+	Duration=$(echo $MJD_start $MJD_end | awk '{print $2-$1}') 
+
+# add into Table TYPE 003, if shorter than 2 years (365*2)
+	if (( "$Duration" < 730 )) ||  (( "$YYYY_end" < 2006 ))  
+	then {
+		echo "$SITE_Dome      001  $YYYY_start $MM_start $DD_start $hh_start $mm_start $ss_start  $YYYY_end $MM_end $DD_end $hh_end $mm_end $ss_end  less than 2 years"  
+	} fi
+
+} done < $filename
+

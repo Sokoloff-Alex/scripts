@@ -13,10 +13,20 @@
 
 
 ####### Euler pole parameters for Eurasia plate ##### 
-# (estimated from ALP_NET network, without Alp orogen, and refined set of  within 1 sdt):
-# lat  =  55.9533; [deg]
-# long = -97.4134; [deg]
-# w =  2.6364e-07; [deg/yr]
+# (estimated from ALP_NET network, without Alp orogen, and refined set of within 1 sdt in EW and SN directions, (0.216 mm / 0.216 mm):
+# Euler pole of EURASIA plate (estimated from ALP_NET network):
+lat_pl=55.7892;    # [deg]
+long_pl=-97.8099;  # [deg]
+w_pl=0.2629*10^-6; # [deg/yr]
+echo "... Euler pole (for Eurasian plate) : lat=$lat_pl [deg]; long=$long_pl [deg]; w=$w_pl [deg/yr]" 1>&2
+# NNR-NUVEL-1A
+#lat_pl=50.6;
+#long_pl=-112.3;
+#w_pl=0.234*10^-6; 
+
+lat_pl=$( echo " $lat_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
+long_pl=$(echo "$long_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
+w_pl=$(   echo "$w_pl    / 180 * 3.141592653589793" | bc -l);  # [rad/yr]
 
 filename=$1;
 
@@ -32,27 +42,12 @@ do {
 	Vz=${line[6]}; # [m/yr] 
 
 	######## Transformation  (substracting the plate motion) ###########
-	# Euler pole of EURASIA plate (estimated from ALP_NET network):
-	#lat_pl=55.9533;      # [deg]
-	#long_pl=-97.4134;    # [deg]
-	#w_pl=0.26364*10^-06; # [deg/yr]
-	# more precise value
-	lat_pl=55.7892;      # [deg]
-	long_pl=-97.8099;    # [deg]
-	w_pl=0.2629*10^-06; # [deg/yr]
-	#echo "lat_pl  = $lat_pl  [deg]";
-	#echo "long_pl = $long_pl [deg]";
-	#echo "w_pl    = $w_pl    [deg/yr]";
-	lat_pl=$( echo " $lat_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
-	long_pl=$(echo "$long_pl / 180 * 3.141592653589793" | bc -l);  # [rad]
-	w_pl=$(   echo "$w_pl    / 180 * 3.141592653589793" | bc -l);  # [rad/yr]
-
-	# Angular velocity vector [rad/yr, rad/yr, rad/yr]
+	# Angular velocity vector of plate [rad/yr, rad/yr, rad/yr]
 	w_pl_x=$( echo "$w_pl * c($lat_pl) * c($long_pl) " | bc -l );
 	w_pl_y=$( echo "$w_pl * c($lat_pl) * s($long_pl) " | bc -l );
-	w_pl_z=$( echo "$w_pl * s($lat_pl)              " | bc -l );
+	w_pl_z=$( echo "$w_pl * s($lat_pl)               " | bc -l );
 	
-	# techtonit plate velocity at station:  V_pl = cross(W_pl,r), [m/yr m/yr m/yr]
+	# techtonit plate velocity of plate at station:  V_pl = cross(W_pl,r), [m/yr m/yr m/yr]
 	V_pl_x=$(echo "        0     - $w_pl_z*$Y + $w_pl_y*$Z" | bc -l );
 	V_pl_y=$(echo "   $w_pl_z*$X +      0     - $w_pl_x*$Z" | bc -l );
 	V_pl_z=$(echo " - $w_pl_y*$X + $w_pl_x*$Y +      0    " | bc -l );
