@@ -114,7 +114,7 @@ sub GET_DATE {
 
 sub GetReceiver {
 	my $Rec = $_[0];
-	$Rec = substr $Rec, 32,19;	
+	$Rec = substr $Rec, 32,20;	
 	$Rec =~ s/^\s+//;
 	$Rec =~ s/[\r\n]+$//;
 	return($Rec);
