@@ -21,28 +21,36 @@
 #
 ##### options:
 #
-# 	-fw,  --ignore-firmware, -sw
-#		generate Station Information File , neglecting firmware updates.
+#   -fw,  --ignore-firmware, -sw
+#           generate Station Information File , neglecting firmware updates.
 #
-#	-nb,  --no-boundaries
-#               set Install. and Remov. dates boundaries of station as empty
+#   -nb,  --no-boundaries
+#           set Install. and Remov. dates boundaries of station as empty
 #
-#       -df,  --no-first-boundary
-#		set first Install. date as empty
-#	-nl,  --no-last-boundary
-#       	set last Remov. date as empty
+#   -df,  --no-first-boundary
+#           set first Install. date as empty
 #
-#	-sb,  --stretch-boundaries
-#		set first Install. date as '1980 01 06 00 00 00'
-#		and last Remove date as    '2099 12 31 00 00 00'.  
-#	-v,   --verbose : verbose mode, print to stderr additional info
+#   -nl,  --no-last-boundary
+#           set last Remov. date as empty
 #
-#	-h, --help
-#		show this help first
+#   -sb,  --stretch-boundaries
+#           set first Install. date as '1980 01 06 00 00 00'
+#           and last Remove date as    '2099 12 31 00 00 00'.  
+#
+#   -ia,  --individual-antenna-calibration, -ai
+#           use individual antenna calibrations, last 5 digits from serial number
+#
+#   -ir,  --individual-receiver-calibration, -ri
+#           use individual receiver calibrations, last 6 digits from serial number
+#
+#   -v,   --verbose : verbose mode, print to stderr additional info
+#
+#   -h,   --help
+#           show this help
 # 
 ####
 #
-# Author: Alexandr Sokolov, KEG
+# Author: Alexandr Sokolov, KEG, BAdW
 # e-mail: sokolovalexv@gmail.com
 # 2016, (c)
 #
@@ -57,6 +65,31 @@ use List::MoreUtils 'true';
 use List::MoreUtils qw(uniq);
 use POSIX qw(strftime);
 use Data::Dumper qw(Dumper);
+
+##### Set global variables #################################
+
+my @options = @ARGV;
+
+my $flag_AntCalibrations;
+if ( grep( /^-ai$/, @options) || grep( /^-ia$/, @options) || grep( /^--individual-antenna-calibrations$/, @options) || grep( /^--antenna-individual-calibrations$/, @options) ) {
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR "option: use individual antenna calibrations (last 5 digits of serial number) \n";
+	}
+	$flag_AntCalibrations = "individual";
+} else {
+	$flag_AntCalibrations = "mean"; # is default
+}
+
+my $flag_RecCalibrations;
+if ( grep( /^-ri$/, @options) || grep( /^-ir$/, @options) || grep( /^--individual-receiver-calibrations$/, @options) || grep( /^--receiver-individual-calibration$/, @options) ) {
+	if ( grep( /^-v$/, @options) || grep( /^--verbose$/, @options) ) {
+		print STDERR "option: use individual receiver calibrations (last 6 digits of serial number) \n";
+	}
+	$flag_RecCalibrations = "individual";
+} else {
+	$flag_AntCalibrations = "mean"; # is default
+}
+
 
 ################################################################################
 #			
@@ -126,11 +159,11 @@ sub GetReceiverNumber {
 	$RecSerNumber =~ s/^\s+//;
 	$RecSerNumber =~ s/[\r\n]+$//; 
 	my $RecNumber = "999999"; 
-	#if ($RecSerNumber ne "") {
-	#	$RecNumber = " ";
-	#} else {
-	#	$RecNumber = "999999";
-	#}
+	if ( $RecSerNumber ne ""  || $flag_RecCalibrations eq "individual" ) {
+		$RecNumber = substr $RecSerNumber, -6;
+		$RecNumber =~ s/[^0-9]//g; 
+		$RecNumber =~ s/^0+//g;
+	}
 	return($RecSerNumber, $RecNumber);
 }
 
@@ -167,13 +200,11 @@ sub GetAntennaSerialNumber {
 	$AntSerNumber =~ s/^\s+//;
 	$AntSerNumber =~ s/[\r\n]+$//;
 	my $AntNumber = "999999";
-	#if ($AntSerNumber ne "") {
-	#	$AntNumber = $AntSerNumber;
-	#	$AntNumber =~ s/\D//g;;
-	#	$AntNumber = substr $AntNumber, -6;
-	#} else {
-	#	$AntNumber = "999999";
-	#}
+	if ( $AntSerNumber ne "" || $flag_AntCalibrations eq "individual" ) {
+		$AntNumber = substr $AntSerNumber, -5;
+		$AntNumber =~ s/[^0-9]//g;
+		$AntNumber =~ s/^0+//g;
+	}
 	return ($AntSerNumber, $AntNumber);
 }
 
@@ -368,7 +399,6 @@ print STDOUT $String;
 my $FLG='001';
 my $dir;
 my $NumberOfArgs = @ARGV;
-my @options = @ARGV;
 if ($NumberOfArgs == 0) {
 	print "Illegal Number of arguments!\n";
 	die "Specify Directory with *.log files!\n";
@@ -402,27 +432,33 @@ if ( grep( /^-h$/, @options) || grep( /^--help$/, @options) ) {
 #
 ##### options:
 #
-# 	-fw,  --ignore-firmware, -sw
-#		generate Station Information File , neglecting firmware updates.
+#   -fw,  --ignore-firmware, -sw
+#           generate Station Information File , neglecting firmware updates.
 #
-#	-nb,  --no-boundaries
-#		set Install. and Remov. dates boundaries of station as empty
+#   -nb,  --no-boundaries
+#           set Install. and Remov. dates boundaries of station as empty
 #
-#	-df,  --no-first-boundary
-#		set first Install. date as empty
+#   -df,  --no-first-boundary
+#           set first Install. date as empty
 #
-#	-nl,  --no-last-boundary
-#		set last Remov. date as empty
+#   -nl,  --no-last-boundary
+#           set last Remov. date as empty
 #
-#	-sb,  --stretch-boundaries
-#		set first Install. date as '1980 01 06 00 00 00'
-#		and last Remove date as    '2099 12 31 00 00 00'.  
+#   -sb,  --stretch-boundaries
+#           set first Install. date as '1980 01 06 00 00 00'
+#           and last Remove date as    '2099 12 31 00 00 00'.  
 #
-#	-v,   --verbose : verbose mode, print to stderr additional info
+#   -ia,  --individual-antenna-calibration, -ai
+#           use individual antenna calibrations, last 5 digits from serial number
 #
-#	-h, --help
-#		show this help first
+#   -ir,  --individual-receiver-calibration, -ri
+#           use individual receiver calibrations, last 6 digits from serial number
 #
+#   -v,   --verbose : verbose mode, print to stderr additional info
+#
+#   -h,   --help
+#           show this help
+# 
 ##########################################################################################\n" ;
 	die "\n";
 }
